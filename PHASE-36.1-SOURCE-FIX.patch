@@ -1,0 +1,17 @@
+--- a/app/src/main/java/com/example/ui/screens/details/DetailsScreens.kt
++++ b/app/src/main/java/com/example/ui/screens/details/DetailsScreens.kt
+@@
+ import androidx.compose.foundation.lazy.LazyRow
++import androidx.compose.foundation.lazy.LazyColumn
+@@
+-    val type = if (isMovie) "movie" else "tv"
+-    val url = "https://www.themoviedb.org/$type/${android.net.Uri.encode(id)}"
++    val mediaRoute = if (isMovie) "movie" else "tv"
++    val url = "https://www.themoviedb.org/$mediaRoute/${android.net.Uri.encode(id)}"
+     val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+-        type = "text/plain"
++        this.type = "text/plain"
+--- a/app/src/main/java/com/example/ui/screens/search/SearchScreen.kt
++++ b/app/src/main/java/com/example/ui/screens/search/SearchScreen.kt
+@@
+-import androidx.compose.foundation.lazy.stickyHeader

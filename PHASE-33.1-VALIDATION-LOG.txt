@@ -1,0 +1,13 @@
+PHASE 33.1 — BUILD RESOURCE FIX
+
+[PASS] Android values/strings.xml parses as XML
+[PASS] Android values-ar/strings.xml parses as XML
+[PASS] No unsupported escape sequences remain in either strings.xml
+[PASS] everyone_watching apostrophe escaped using Android syntax: \'
+[PASS] receiver apostrophe escape normalized from \\x27 to \'
+[PASS] Source project report included
+[PASS] ZIP integrity checked after packaging
+[NOT RUN] assembleDebug / AAPT compilation in GitHub Actions
+
+CI error addressed: :app:mergeDebugResources — Invalid unicode escape sequence in string resource everyone_watching.
+The AGP 8.7.2 / compileSdk 36 warning is unrelated to this resource failure.

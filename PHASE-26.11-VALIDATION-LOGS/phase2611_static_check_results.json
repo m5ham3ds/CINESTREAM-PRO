@@ -1,0 +1,283 @@
+{
+  "total": 51,
+  "passed": 51,
+  "failed": 0,
+  "checks": [
+    {
+      "name": "Project root and Gradle wrapper exist",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Protected baseline unchanged: .firebaserc",
+      "passed": true,
+      "detail": "byte-for-byte"
+    },
+    {
+      "name": "Protected baseline unchanged: firebase.json",
+      "passed": true,
+      "detail": "byte-for-byte"
+    },
+    {
+      "name": "Protected baseline unchanged: firestore.rules",
+      "passed": true,
+      "detail": "byte-for-byte"
+    },
+    {
+      "name": "Protected baseline unchanged: app/google-services.json",
+      "passed": true,
+      "detail": "byte-for-byte"
+    },
+    {
+      "name": "Protected baseline unchanged: app/build.gradle.kts",
+      "passed": true,
+      "detail": "byte-for-byte"
+    },
+    {
+      "name": "Protected baseline unchanged: gradle/libs.versions.toml",
+      "passed": true,
+      "detail": "byte-for-byte"
+    },
+    {
+      "name": "Protected baseline unchanged: app/src/main/java/com/example/extension/managed/playback/PlaybackAttempt.kt",
+      "passed": true,
+      "detail": "byte-for-byte"
+    },
+    {
+      "name": "Protected baseline unchanged: app/src/main/java/com/example/extension/managed/searchorder/SearchOrderRepository.kt",
+      "passed": true,
+      "detail": "byte-for-byte"
+    },
+    {
+      "name": "Protected baseline unchanged: app/src/main/java/com/example/extension/managed/runtime/DefaultControlledManagedExtensionRuntime.kt",
+      "passed": true,
+      "detail": "byte-for-byte"
+    },
+    {
+      "name": "All 8 providers and shared port support are present",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "No direct Jsoup HTTP terminal calls remain inside provider scraper files",
+      "passed": true,
+      "detail": "none found"
+    },
+    {
+      "name": "Scrapers route HTTP through ProtectedSiteHttpClient",
+      "passed": true,
+      "detail": "76 references"
+    },
+    {
+      "name": "OkHttp CookieJar obtains live cookies by exact request URL",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Raw Set-Cookie attributes are handed to CookieManager",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Raw Set-Cookie fields are processed before redirects",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "No manual Cookie header gets forwarded to OkHttp",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Explicit cf-mitigated: challenge detection",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Bare 403/503 is not sufficient",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "No insecure HTTPS downgrade redirects",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Cloudflare exception unwrap has no cf-ray/cf_clearance-only heuristic",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Session file version v2 is used",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Persisted sessions store cookie names only",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "No raw cookie values written by persistSession",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Legacy noncanonical file is removed after migration",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Clearance fingerprint captured before invalidation",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Challenge invalidation awaits CookieManager setCookie callbacks",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "No apex/www cookie merging during per-URL capture",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "EgyDeadScraper.kt preserves Cloudflare errors in static extraction fallback",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "QfilmScraper.kt preserves Cloudflare errors in static extraction fallback",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "EgyDead POST challenge is rethrown instead of GET fallback",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "All runtime operations have common recovery wrapper",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Runtime retries same operation after successful verification",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Verified-but-still-challenged path retains retry UI",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Controller invalidates stale clearance before dialog is visible",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Controller stores names/metadata without raw cookie values",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Completion fingerprint must differ from previous cookie when known",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Challenge completion guards while challenge DOM/title remain",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Independent app-wide Dialog is present",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Dialog has large size and scroll instruction",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Unit tests cover false-positive bare HTTP statuses",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Unit tests cover cf-mitigated header",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Unit tests cover legacy raw credential removal",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Robolectric test covers rejected cached cookie",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Robolectric test covers retry failure and later success",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "All values resource XML files parse",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "Cloudflare dialog strings all translated into Arabic",
+      "passed": true,
+      "detail": "12/12 keys"
+    },
+    {
+      "name": "No suspicious statement joins found",
+      "passed": true,
+      "detail": "none"
+    },
+    {
+      "name": "Session persistence serializes metadata only",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "name": "QFilm function declaration/order unchanged",
+      "passed": true,
+      "detail": "baseline=5, current=5"
+    },
+    {
+      "name": "No files beyond expected source/test/resource scope modified",
+      "passed": true,
+      "detail": "17 changed files: app/src/main/java/com/example/extension/managed/scraper/Anime4UpScraper.kt, app/src/main/java/com/example/extension/managed/scraper/QfilmScraper.kt, app/src/main/java/com/example/extension/managed/scraper/WitanimeScraper.kt, app/src/main/java/com/example/extension/managed/scraper/EgyDeadScraper.kt, app/src/main/java/com/example/extension/managed/scraper/ArabAnimeScraper.kt, app/src/main/java/com/example/extension/managed/scraper/AnimeBlkomScraper.kt, app/src/main/java/com/example/extension/managed/scraper/PortedScraperSupport.kt, app/src/main/java/com/example/extension/managed/web/StaticMediaExtractor.kt, app/src/main/java/com/example/extension/managed/runtime/web/ProtectedSiteHttpClient.kt, app/src/main/java/com/example/extension/managed/runtime/web/ProtectedWebRuntime.kt, app/src/main/java/com/example/extension/managed/runtime/web/InteractiveChallengeController.kt, app/src/main/java/com/example/extension/managed/runtime/web/PerSiteSessionStore.kt, app/src/main/java/com/example/extension/managed/runtime/web/ProtectedSiteSession.kt, app/src/main/java/com/example/ui/components/InteractiveChallengeWebView.kt, app/src/test/java/com/example/extension/managed/runtime/web/PerSiteSessionStoreRecoveryTest.kt, app/src/test/java/com/example/extension/managed/runtime/web/ProtectedSiteHttpClientTest.kt, app/src/test/java/com/example/extension/managed/runtime/web/InteractiveChallengeControllerRecoveryTest.kt"
+    }
+  ],
+  "changed_files": [
+    "app/src/main/java/com/example/extension/managed/scraper/Anime4UpScraper.kt",
+    "app/src/main/java/com/example/extension/managed/scraper/QfilmScraper.kt",
+    "app/src/main/java/com/example/extension/managed/scraper/WitanimeScraper.kt",
+    "app/src/main/java/com/example/extension/managed/scraper/EgyDeadScraper.kt",
+    "app/src/main/java/com/example/extension/managed/scraper/ArabAnimeScraper.kt",
+    "app/src/main/java/com/example/extension/managed/scraper/AnimeBlkomScraper.kt",
+    "app/src/main/java/com/example/extension/managed/scraper/PortedScraperSupport.kt",
+    "app/src/main/java/com/example/extension/managed/web/StaticMediaExtractor.kt",
+    "app/src/main/java/com/example/extension/managed/runtime/web/ProtectedSiteHttpClient.kt",
+    "app/src/main/java/com/example/extension/managed/runtime/web/ProtectedWebRuntime.kt",
+    "app/src/main/java/com/example/extension/managed/runtime/web/InteractiveChallengeController.kt",
+    "app/src/main/java/com/example/extension/managed/runtime/web/PerSiteSessionStore.kt",
+    "app/src/main/java/com/example/extension/managed/runtime/web/ProtectedSiteSession.kt",
+    "app/src/main/java/com/example/ui/components/InteractiveChallengeWebView.kt",
+    "app/src/test/java/com/example/extension/managed/runtime/web/PerSiteSessionStoreRecoveryTest.kt",
+    "app/src/test/java/com/example/extension/managed/runtime/web/ProtectedSiteHttpClientTest.kt",
+    "app/src/test/java/com/example/extension/managed/runtime/web/InteractiveChallengeControllerRecoveryTest.kt"
+  ],
+  "direct_http_terminals": [],
+  "suspicious_statement_joins": []
+}

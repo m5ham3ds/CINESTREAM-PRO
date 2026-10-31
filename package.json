@@ -1,0 +1,13 @@
+{
+  "scripts": {
+    "dev": "node server.js",
+    "start": "node server.js",
+    "test:rules": "node --test qa/node-tests/rules/firestore_security_regression.test.js",
+    "test:identity": "node --test qa/node-tests/identity/firebase_identity_integrity.test.js",
+    "test:catalog-refresh": "node --test qa/node-tests/catalog_refresh_guest_regression.test.js",
+    "test:extensions": "node --test qa/node-tests/extensions/managed_extension_admin_config_regression.test.js"
+  },
+  "dependencies": {
+    "jsdom": "^30.0.1"
+  }
+}

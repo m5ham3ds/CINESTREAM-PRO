@@ -1,0 +1,25 @@
+PHASE 35 validation log
+Date: 2026-10-31
+Input project: CINESTREAM-PRO-PHASE34-REDELIVERY-20261030(1).zip
+
+PASS: Parsed all Android resource XML files under app/src/main/res with Python ElementTree.
+PASS: English and Arabic resource files each contain 1340 string IDs with no duplicate IDs.
+PASS: All 135 R.string references found in the changed Kotlin files exist in both values and values-ar.
+PASS: Kotlin parser pass over changed Kotlin source files found no parser-level syntax diagnostics (no "expecting", unexpected tokens, or top-level declaration parse errors).
+PASS: Existing ExpandableSynopsis remains the only overview component for each MovieDetailsScreen/SeriesDetailsScreen; it is positioned after Play/Download and removed from Details tab.
+PASS: DetailsSectionTabs uses content-width LazyRow chips in order MORE, TRAILERS, DETAILS.
+PASS: More Like This is implemented as a 3-column poster grid for Movie and Series.
+PASS: Trailers & More now includes backdrop/poster preview cards and a scrollable gallery dialog.
+PASS: Details tab includes cast, optional collection, real TMDB metadata rows, optional IMDb/homepage actions; TV season/episode selection and episode rows are gated to Details tab.
+PASS: Domain model and JSON detail cache include optional images, collection, production metadata, and external IDs.
+PASS: Details calls use append_to_response=credits,translations,images,external_ids; video details remain on existing dedicated video routes.
+PASS: Lightweight season-count lookup explicitly sends append_to_response="" to avoid downloading image metadata.
+PASS: SearchScreen imports LazyListScope.stickyHeader; NewAndHot section labels are evaluated in the @Composable body; Discover provider image uses explicit painter/id arguments and a for-loop inside FlowRow.
+PASS: No new Gradle dependencies were added.
+
+NOT VERIFIED: Full Gradle assembleDebug / Kotlin type-check / APK generation.
+Reason: Gradle 8.9 distribution is not present in this runtime's wrapper cache. An offline wrapper invocation cannot resolve the distribution; online download previously failed with UnknownHostException for services.gradle.org.
+
+NOT VERIFIED: Live Worker append-to-response data delivery. The Android client requests images and external_ids, but the separately deployed Worker must include those values in getDetailAppendToResponse allowlist. The relevant Worker patch guide is present in the project; this archive does not contain the deployed Worker source or perform deployment.
+
+NOT VERIFIED: UI behavior on a physical Android device, including portrait layout, touch interaction, image loading, and playback handoff.

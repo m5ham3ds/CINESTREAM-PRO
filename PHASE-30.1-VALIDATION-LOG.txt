@@ -1,0 +1,9 @@
+PHASE 30.1 — Coil MemoryCache build fix
+Date: 2026-10-30
+Source failure: GitHub Actions run 41000866604 / job 123884685437
+
+[PASS] Corrected MemoryCache.Builder.maxSizeBytes argument from Long to Int.
+[PASS] Preserved 80 MiB memory-cache limit (83,886,080 bytes).
+[PASS] Preserved DiskCache 800 MiB Long value.
+[PASS] No Coil dependency/version changes.
+[PENDING] Full Gradle assembleDebug / GitHub Actions confirmation.

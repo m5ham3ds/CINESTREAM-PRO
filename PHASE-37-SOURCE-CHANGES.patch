@@ -1,0 +1,1305 @@
+diff -ruN -x 'PHASE-37*' baseline/CINESTREAM-PRO/app/src/main/java/com/example/data/remote/TmdbApiService.kt cine/CINESTREAM-PRO/app/src/main/java/com/example/data/remote/TmdbApiService.kt
+--- baseline/CINESTREAM-PRO/app/src/main/java/com/example/data/remote/TmdbApiService.kt	2026-10-31 00:08:00.000000000 +0000
++++ cine/CINESTREAM-PRO/app/src/main/java/com/example/data/remote/TmdbApiService.kt	2026-10-31 01:42:48.633431508 +0000
+@@ -122,7 +122,7 @@
+         @Path("tv_id") seriesId: Int,
+         @Path("season_number") seasonNumber: Int,
+         @Query("language") language: String? = null,
+-        @Query("append_to_response") appendToResponse: String? = null
++        @Query("append_to_response") appendToResponse: String? = "aggregate_credits,videos,images"
+     ): TmdbDataEnvelope<TmdbSeasonDetails>
+ 
+     // Person
+diff -ruN -x 'PHASE-37*' baseline/CINESTREAM-PRO/app/src/main/java/com/example/data/remote/TmdbModels.kt cine/CINESTREAM-PRO/app/src/main/java/com/example/data/remote/TmdbModels.kt
+--- baseline/CINESTREAM-PRO/app/src/main/java/com/example/data/remote/TmdbModels.kt	2026-10-31 00:00:30.000000000 +0000
++++ cine/CINESTREAM-PRO/app/src/main/java/com/example/data/remote/TmdbModels.kt	2026-10-31 01:42:47.828474851 +0000
+@@ -133,6 +133,51 @@
+     @Json(name = "crew") val crew: List<TmdbCrew>? = emptyList()
+ )
+ 
++/** TMDB /aggregate_credits payload used by a season's complete cast and crew. */
++@JsonClass(generateAdapter = true)
++data class TmdbAggregateRole(
++    @Json(name = "character") val character: String? = null,
++    @Json(name = "episode_count") val episodeCount: Int? = null
++)
++
++@JsonClass(generateAdapter = true)
++data class TmdbAggregateJob(
++    @Json(name = "job") val job: String? = null,
++    @Json(name = "episode_count") val episodeCount: Int? = null
++)
++
++@JsonClass(generateAdapter = true)
++data class TmdbAggregateCast(
++    @Json(name = "id") val id: Int,
++    @Json(name = "name") val name: String? = null,
++    @Json(name = "profile_path") val profilePath: String? = null,
++    @Json(name = "order") val order: Int? = null,
++    @Json(name = "roles") val roles: List<TmdbAggregateRole>? = emptyList(),
++    @Json(name = "total_episode_count") val totalEpisodeCount: Int? = null
++) {
++    val fullProfileUrl: String?
++        get() = profilePath?.let { "https://image.tmdb.org/t/p/w185$it" }
++}
++
++@JsonClass(generateAdapter = true)
++data class TmdbAggregateCrew(
++    @Json(name = "id") val id: Int,
++    @Json(name = "name") val name: String? = null,
++    @Json(name = "profile_path") val profilePath: String? = null,
++    @Json(name = "department") val department: String? = null,
++    @Json(name = "jobs") val jobs: List<TmdbAggregateJob>? = emptyList(),
++    @Json(name = "total_episode_count") val totalEpisodeCount: Int? = null
++) {
++    val fullProfileUrl: String?
++        get() = profilePath?.let { "https://image.tmdb.org/t/p/w185$it" }
++}
++
++@JsonClass(generateAdapter = true)
++data class TmdbAggregateCredits(
++    @Json(name = "cast") val cast: List<TmdbAggregateCast>? = emptyList(),
++    @Json(name = "crew") val crew: List<TmdbAggregateCrew>? = emptyList()
++)
++
+ @JsonClass(generateAdapter = true)
+ data class TmdbVideo(
+     @Json(name = "id") val id: String,
+@@ -332,7 +377,7 @@
+     @Json(name = "episode_count") val episodeCount: Int? = null,
+     @Json(name = "poster_path") val posterPath: String? = null,
+     @Json(name = "vote_average") val voteAverage: Double? = null,
+-    @Json(name = "credits") val credits: TmdbCredits? = null,
++    @Json(name = "aggregate_credits") val credits: TmdbAggregateCredits? = null,
+     @Json(name = "videos") val videos: TmdbVideos? = null,
+     @Json(name = "images") val images: TmdbImages? = null
+ ) {
+diff -ruN -x 'PHASE-37*' baseline/CINESTREAM-PRO/app/src/main/java/com/example/data/repository/TmdbMediaRepositoryImpl.kt cine/CINESTREAM-PRO/app/src/main/java/com/example/data/repository/TmdbMediaRepositoryImpl.kt
+--- baseline/CINESTREAM-PRO/app/src/main/java/com/example/data/repository/TmdbMediaRepositoryImpl.kt	2026-10-31 00:10:02.000000000 +0000
++++ cine/CINESTREAM-PRO/app/src/main/java/com/example/data/repository/TmdbMediaRepositoryImpl.kt	2026-10-31 01:47:41.470228271 +0000
+@@ -12,6 +12,7 @@
+ import kotlinx.coroutines.Dispatchers
+ import kotlinx.coroutines.withContext
+ import com.example.domain.models.CastMember
++import com.example.domain.models.CrewMember
+ import com.example.domain.models.VideoTrailer
+ import com.example.domain.models.Season
+ import com.example.domain.models.Episode
+@@ -1157,17 +1158,11 @@
+             } else {
+                 RetrofitClient.tmdbApi.getSeriesVideos(id, language = locale, mode = if (primaryOnly) "primary" else "all")
+             }
+-            val excludedTrailerTitle = Regex(
+-                "\\b(featurette|behind[ -]?the[ -]?scenes|bts|interview|deleted scene|tv spot|teaser|making of|sneak peek|clip|promo|promotional)\\b",
+-                RegexOption.IGNORE_CASE
+-            )
+             val videos = envelope.data?.results.orEmpty()
+                 .asSequence()
+                 .filter {
+                     it.site.equals("YouTube", ignoreCase = true) &&
+-                        it.key.isNotBlank() &&
+-                        it.type.equals("Trailer", ignoreCase = true) &&
+-                        !excludedTrailerTitle.containsMatchIn(it.name)
++                        it.key.matches(Regex("^[A-Za-z0-9_-]{1,64}$"))
+                 }
+                 .distinctBy { it.key }
+                 .map {
+@@ -1465,9 +1460,35 @@
+                 airDate = dto.airDate ?: fallback?.airDate,
+                 rating = verifiedTmdbRating(dto.voteAverage, null),
+                 cast = dto.credits?.cast.orEmpty().filter { !it.name.isNullOrBlank() }
+-                    .sortedBy { it.order ?: 0 }.distinctBy { it.id }.take(30)
+-                    .map { CastMember(it.id.toString(), it.name ?: "", it.character ?: "", it.fullProfileUrl, order = it.order ?: 0) },
++                    .sortedBy { it.order ?: 0 }.distinctBy { it.id }
++                    .map { person ->
++                        val primaryRole = person.roles.orEmpty().maxByOrNull { it.episodeCount ?: 0 }
++                        CastMember(
++                            id = person.id.toString(),
++                            name = person.name ?: "",
++                            character = primaryRole?.character.orEmpty(),
++                            profileUrl = person.fullProfileUrl,
++                            order = person.order ?: 0,
++                            episodeCount = person.totalEpisodeCount
++                                ?: person.roles.orEmpty().sumOf { it.episodeCount ?: 0 }
++                        )
++                    },
++                crew = dto.credits?.crew.orEmpty().filter { !it.name.isNullOrBlank() }
++                    .distinctBy { "${it.id}_${it.department}" }
++                    .map { person ->
++                        CrewMember(
++                            id = person.id.toString(),
++                            name = person.name ?: "",
++                            department = person.department.orEmpty(),
++                            jobs = person.jobs.orEmpty().mapNotNull { it.job?.takeIf(String::isNotBlank) }.distinct(),
++                            profileUrl = person.fullProfileUrl,
++                            episodeCount = person.totalEpisodeCount
++                                ?: person.jobs.orEmpty().sumOf { it.episodeCount ?: 0 }
++                        )
++                    },
+                 trailers = dto.videos?.results.orEmpty().filter { it.site.equals("YouTube", ignoreCase = true) }
++                    .filter { it.key.isNotBlank() }
++                    .distinctBy { it.key }
+                     .map { video -> VideoTrailer(video.name, video.key, video.type, video.official ?: false, video.site, video.publishedAt, video.iso6391) },
+                 backdropImages = dto.images?.backdrops.orEmpty().mapNotNull { it.fullUrl("w780") }.distinct(),
+                 posterImages = dto.images?.posters.orEmpty().mapNotNull { it.fullUrl("w500") }.distinct()
+diff -ruN -x 'PHASE-37*' baseline/CINESTREAM-PRO/app/src/main/java/com/example/domain/models/Media.kt cine/CINESTREAM-PRO/app/src/main/java/com/example/domain/models/Media.kt
+--- baseline/CINESTREAM-PRO/app/src/main/java/com/example/domain/models/Media.kt	2026-10-31 00:00:30.000000000 +0000
++++ cine/CINESTREAM-PRO/app/src/main/java/com/example/domain/models/Media.kt	2026-10-31 01:42:47.029865295 +0000
+@@ -8,7 +8,19 @@
+     val name: String,
+     val character: String,
+     val profileUrl: String?,
+-    val order: Int = 0
++    val order: Int = 0,
++    /** Number of episodes credited to this performer when available. */
++    val episodeCount: Int = 0
++)
++
++@Immutable
++data class CrewMember(
++    val id: String,
++    val name: String,
++    val department: String,
++    val jobs: List<String> = emptyList(),
++    val profileUrl: String? = null,
++    val episodeCount: Int = 0
+ )
+ 
+ @Immutable
+@@ -118,6 +130,7 @@
+     val airDate: String? = null,
+     val rating: Double = 0.0,
+     val cast: List<CastMember> = emptyList(),
++    val crew: List<CrewMember> = emptyList(),
+     val trailers: List<VideoTrailer> = emptyList(),
+     val backdropImages: List<String> = emptyList(),
+     val posterImages: List<String> = emptyList()
+diff -ruN -x 'PHASE-37*' baseline/CINESTREAM-PRO/app/src/main/java/com/example/ui/screens/details/DetailsScreens.kt cine/CINESTREAM-PRO/app/src/main/java/com/example/ui/screens/details/DetailsScreens.kt
+--- baseline/CINESTREAM-PRO/app/src/main/java/com/example/ui/screens/details/DetailsScreens.kt	2026-10-31 00:34:02.000000000 +0000
++++ cine/CINESTREAM-PRO/app/src/main/java/com/example/ui/screens/details/DetailsScreens.kt	2026-10-31 01:53:12.141458250 +0000
+@@ -81,6 +81,7 @@
+ import com.example.data.repository.DownloadRepository
+ import com.example.data.repository.LibraryRepository
+ import com.example.domain.models.CastMember
++import com.example.domain.models.CrewMember
+ import com.example.domain.models.Episode
+ import com.example.domain.models.Movie
+ import com.example.domain.models.Series
+@@ -759,76 +760,25 @@
+                     if (tab == "TRAILERS") viewModel.showOtherTrailers(movie.id, currentLang)
+                 }
+                 
+-                // Trailers: only the primary trailer is composed initially. The full list
+-                // is requested from Worker only after the user explicitly expands this section.
+-                if (selectedDetailsTab == "TRAILERS" && selectedPrimaryTrailer != null) {
++                if (selectedDetailsTab == "TRAILERS") {
+                     Text(stringResource(R.string.trailers), color = MaterialTheme.colorScheme.onBackground, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 16.dp))
+-                    Spacer(modifier = Modifier.height(8.dp))
+-                    LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+-                        item(key = "m_primary_trailer_${selectedPrimaryTrailer.key}") {
+-                            TrailerCard(trailer = selectedPrimaryTrailer, isPrimary = true) {
+-                                if (!com.example.utils.NetworkUtils.isInternetAvailable(context)) {
+-                                    Toast.makeText(context, context.getString(R.string.no_internet_check_connection), Toast.LENGTH_SHORT).show()
+-                                } else {
+-                                    activePlayback = null
+-                                    selectedTrailerId = selectedPrimaryTrailer.key
+-                                }
+-                            }
+-                        }
+-                    }
+-                    Row(
+-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
+-                        verticalAlignment = Alignment.CenterVertically,
+-                        horizontalArrangement = Arrangement.Start
+-                    ) {
+-                        TextButton(
+-                            enabled = !uiState.isLoadingOtherTrailers,
+-                            onClick = {
+-                                if (uiState.areOtherTrailersExpanded) viewModel.hideOtherTrailers()
+-                                else viewModel.showOtherTrailers(movie.id, currentLang)
+-                            }
+-                        ) {
+-                            if (uiState.isLoadingOtherTrailers) {
+-                                CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+-                                Spacer(modifier = Modifier.width(8.dp))
+-                            }
+-                            Text(stringResource(if (uiState.areOtherTrailersExpanded) R.string.hide_other_trailers else R.string.show_other_trailers))
+-                        }
+-                    }
+-                    AnimatedVisibility(
+-                        visible = uiState.areOtherTrailersExpanded && !uiState.isLoadingOtherTrailers,
+-                        enter = fadeIn(animationSpec = tween(180)) + expandVertically(animationSpec = tween(180)),
+-                        exit = fadeOut(animationSpec = tween(120)) + shrinkVertically(animationSpec = tween(120))
+-                    ) {
+-                        if (uiState.otherTrailers.isNotEmpty()) {
+-                            LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+-                                items(uiState.otherTrailers, key = { "m_other_trailer_${it.key}" }) { trailer ->
+-                                    TrailerCard(trailer = trailer, isPrimary = false) {
+-                                        if (!com.example.utils.NetworkUtils.isInternetAvailable(context)) {
+-                                            Toast.makeText(context, context.getString(R.string.no_internet_check_connection), Toast.LENGTH_SHORT).show()
+-                                        } else {
+-                                            activePlayback = null
+-                                            selectedTrailerId = trailer.key
+-                                        }
+-                                    }
+-                                }
++                    Spacer(Modifier.height(8.dp))
++                    DetailsTrailerList(
++                        primaryTrailer = selectedPrimaryTrailer,
++                        otherTrailers = uiState.otherTrailers,
++                        isLoading = uiState.isLoadingOtherTrailers,
++                        onSelect = { trailer ->
++                            if (!com.example.utils.NetworkUtils.isInternetAvailable(context)) {
++                                Toast.makeText(context, context.getString(R.string.no_internet_check_connection), Toast.LENGTH_SHORT).show()
++                            } else {
++                                activePlayback = null
++                                selectedTrailerId = trailer.key
+                             }
+-                        } else {
+-                            Text(
+-                                text = stringResource(R.string.no_other_trailers),
+-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+-                                style = MaterialTheme.typography.bodySmall,
+-                                modifier = Modifier.padding(horizontal = 16.dp)
+-                            )
+                         }
+-                    }
+-                    Spacer(modifier = Modifier.height(24.dp))
+-                }
+-                
+-                if (selectedDetailsTab == "TRAILERS" && selectedPrimaryTrailer == null) {
+-                    Text(stringResource(R.string.details_no_trailers), color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(horizontal = 18.dp, vertical = 22.dp))
++                    )
++                    Spacer(Modifier.height(24.dp))
+                 }
+-                if (selectedDetailsTab == "TRAILERS") {
++                                if (selectedDetailsTab == "TRAILERS") {
+                     DetailsArtworkGallerySection(
+                         backdropImages = movie.backdropImages.ifEmpty { listOf(movie.backdropUrl).filter { it.isNotBlank() } },
+                         posterImages = movie.posterImages.ifEmpty { listOf((displayMoviePoster ?: movie.posterUrl)).filter { it.isNotBlank() } },
+@@ -878,7 +828,13 @@
+                     )
+                 }
+                 if (selectedDetailsTab == "MORE") {
+-                    DetailsRelatedMovieGrid(uiState.similarMovies) { related -> onRelatedMovieClick(related.id, isMovieAnime) }
++                    DetailsRelatedMovieGrid(
++                        relatedItems = uiState.similarMovies,
++                        hasMore = uiState.similarMoviesPage < uiState.similarMoviesTotalPages,
++                        isLoadingMore = uiState.isLoadingMoreSimilar,
++                        onLoadMore = viewModel::loadMoreSimilarMovies,
++                        onClick = { related -> onRelatedMovieClick(related.id, isMovieAnime) }
++                    )
+                 }
+                 } // end if (!isInPip)
+             }
+@@ -1875,75 +1831,25 @@
+                     if (tab == "TRAILERS") viewModel.showOtherTrailers(series.id, currentSeriesLang)
+                 }
+                 
+-                // Lazy trailer loading: fetch only the selected primary trailer on page entry.
+-                if (selectedDetailsTab == "TRAILERS" && selectedPrimaryTrailer != null) {
++                if (selectedDetailsTab == "TRAILERS") {
+                     Text(stringResource(R.string.trailers), color = MaterialTheme.colorScheme.onBackground, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 16.dp))
+-                    Spacer(modifier = Modifier.height(8.dp))
+-                    LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+-                        item(key = "s_primary_trailer_${selectedPrimaryTrailer.key}") {
+-                            TrailerCard(trailer = selectedPrimaryTrailer, isPrimary = true) {
+-                                if (!com.example.utils.NetworkUtils.isInternetAvailable(context)) {
+-                                    Toast.makeText(context, context.getString(R.string.no_internet_check_connection), Toast.LENGTH_SHORT).show()
+-                                } else {
+-                                    activePlayback = null
+-                                    selectedTrailerId = selectedPrimaryTrailer.key
+-                                }
+-                            }
+-                        }
+-                    }
+-                    Row(
+-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
+-                        verticalAlignment = Alignment.CenterVertically,
+-                        horizontalArrangement = Arrangement.Start
+-                    ) {
+-                        TextButton(
+-                            enabled = !uiState.isLoadingOtherTrailers,
+-                            onClick = {
+-                                if (uiState.areOtherTrailersExpanded) viewModel.hideOtherTrailers()
+-                                else viewModel.showOtherTrailers(series.id, currentSeriesLang)
+-                            }
+-                        ) {
+-                            if (uiState.isLoadingOtherTrailers) {
+-                                CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+-                                Spacer(modifier = Modifier.width(8.dp))
+-                            }
+-                            Text(stringResource(if (uiState.areOtherTrailersExpanded) R.string.hide_other_trailers else R.string.show_other_trailers))
+-                        }
+-                    }
+-                    AnimatedVisibility(
+-                        visible = uiState.areOtherTrailersExpanded && !uiState.isLoadingOtherTrailers,
+-                        enter = fadeIn(animationSpec = tween(180)) + expandVertically(animationSpec = tween(180)),
+-                        exit = fadeOut(animationSpec = tween(120)) + shrinkVertically(animationSpec = tween(120))
+-                    ) {
+-                        if (uiState.otherTrailers.isNotEmpty()) {
+-                            LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+-                                items(uiState.otherTrailers, key = { "s_other_trailer_${it.key}" }) { trailer ->
+-                                    TrailerCard(trailer = trailer, isPrimary = false) {
+-                                        if (!com.example.utils.NetworkUtils.isInternetAvailable(context)) {
+-                                            Toast.makeText(context, context.getString(R.string.no_internet_check_connection), Toast.LENGTH_SHORT).show()
+-                                        } else {
+-                                            activePlayback = null
+-                                            selectedTrailerId = trailer.key
+-                                        }
+-                                    }
+-                                }
++                    Spacer(Modifier.height(8.dp))
++                    DetailsTrailerList(
++                        primaryTrailer = selectedPrimaryTrailer,
++                        otherTrailers = uiState.otherTrailers,
++                        isLoading = uiState.isLoadingOtherTrailers,
++                        onSelect = { trailer ->
++                            if (!com.example.utils.NetworkUtils.isInternetAvailable(context)) {
++                                Toast.makeText(context, context.getString(R.string.no_internet_check_connection), Toast.LENGTH_SHORT).show()
++                            } else {
++                                activePlayback = null
++                                selectedTrailerId = trailer.key
+                             }
+-                        } else {
+-                            Text(
+-                                text = stringResource(R.string.no_other_trailers),
+-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+-                                style = MaterialTheme.typography.bodySmall,
+-                                modifier = Modifier.padding(horizontal = 16.dp)
+-                            )
+                         }
+-                    }
+-                    Spacer(modifier = Modifier.height(24.dp))
+-                }
+-                
+-                if (selectedDetailsTab == "TRAILERS" && selectedPrimaryTrailer == null) {
+-                    Text(stringResource(R.string.details_no_trailers), color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(horizontal = 18.dp, vertical = 22.dp))
++                    )
++                    Spacer(Modifier.height(24.dp))
+                 }
+-                if (selectedDetailsTab == "TRAILERS") {
++                                if (selectedDetailsTab == "TRAILERS") {
+                     DetailsArtworkGallerySection(
+                         backdropImages = series.backdropImages.ifEmpty { listOf(series.backdropUrl).filter { it.isNotBlank() } },
+                         posterImages = series.posterImages.ifEmpty { listOf((displaySeriesPoster ?: series.posterUrl)).filter { it.isNotBlank() } },
+@@ -1993,7 +1899,13 @@
+ 
+                 }
+                 if (selectedDetailsTab == "MORE") {
+-                    DetailsRelatedSeriesGrid(uiState.similarSeries) { related -> onRelatedSeriesClick(related.id, isSeriesAnime) }
++                    DetailsRelatedSeriesGrid(
++                        relatedItems = uiState.similarSeries,
++                        hasMore = uiState.similarSeriesPage < uiState.similarSeriesTotalPages,
++                        isLoadingMore = uiState.isLoadingMoreSimilar,
++                        onLoadMore = viewModel::loadMoreSimilarSeries,
++                        onClick = { related -> onRelatedSeriesClick(related.id, isSeriesAnime) }
++                    )
+                 }
+                 } // Close if (!isInPip) block
+                 } // Close item block
+@@ -2122,73 +2034,97 @@
+ @Composable
+ fun TrailerCard(
+     trailer: VideoTrailer,
+-    isPrimary: Boolean = false,
+     onClick: () -> Unit
+ ) {
+-    val context = LocalContext.current
+-    val interactionSource = remember { MutableInteractionSource() }
+-    val isPressed by interactionSource.collectIsPressedAsState()
+-    val pressScale by animateFloatAsState(
+-        targetValue = if (isPressed) 0.97f else 1f,
+-        animationSpec = spring(dampingRatio = 0.68f, stiffness = 560f),
+-        label = "trailer-card-press-scale"
+-    )
+-    Box(
++    val fallbackTitle = stringResource(R.string.trailers)
++    val displayTitle = trailer.name.ifBlank { trailer.type.ifBlank { fallbackTitle } }
++    Column(
+         modifier = Modifier
+-            .width(200.dp)
+-            .aspectRatio(16f/9f)
+-            .graphicsLayer { scaleX = pressScale; scaleY = pressScale }
+-            .clip(RoundedCornerShape(8.dp))
+-            .combinedClickable(
+-                interactionSource = interactionSource,
+-                indication = LocalIndication.current,
+-                onClick = {
+-                    if (!com.example.utils.NetworkUtils.isInternetAvailable(context)) {
+-                        Toast.makeText(context, context.getString(R.string.no_internet_check_connection), Toast.LENGTH_SHORT).show()
+-                    } else {
+-                        onClick()
+-                    }
+-                }
+-            )
++            .fillMaxWidth()
++            .clickable(onClick = onClick)
+     ) {
+-        AsyncImage(
+-            model = "https://img.youtube.com/vi/${trailer.key}/hqdefault.jpg",
+-            contentDescription = trailer.name.ifEmpty { stringResource(R.string.trailers) },
+-            contentScale = ContentScale.Crop,
+-            modifier = Modifier.fillMaxSize()
+-        )
+-        Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background.copy(alpha=0.3f)), contentAlignment = Alignment.Center) {
+-            Icon(Icons.Default.PlayArrow, contentDescription = stringResource(R.string.play_now), tint = MaterialTheme.colorScheme.onBackground, modifier = Modifier.size(48.dp))
+-        }
+-        if (isPrimary) {
+-            Surface(
+-                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.92f),
+-                shape = RoundedCornerShape(4.dp),
+-                modifier = Modifier
+-                    .align(Alignment.TopStart)
+-                    .padding(8.dp)
++        Box(
++            modifier = Modifier
++                .fillMaxWidth()
++                .aspectRatio(16f / 9f)
++                .clip(RoundedCornerShape(10.dp))
++                .background(MaterialTheme.colorScheme.surfaceVariant),
++            contentAlignment = Alignment.Center
++        ) {
++            AsyncImage(
++                model = "https://img.youtube.com/vi/${trailer.key}/hqdefault.jpg",
++                contentDescription = displayTitle,
++                contentScale = ContentScale.Crop,
++                modifier = Modifier.fillMaxSize()
++            )
++            Box(
++                Modifier
++                    .size(56.dp)
++                    .clip(CircleShape)
++                    .background(Color.Black.copy(alpha = 0.62f)),
++                contentAlignment = Alignment.Center
+             ) {
+-                Text(
+-                    text = stringResource(if (trailer.isOfficial) R.string.official_trailer else R.string.primary_trailer),
+-                    color = MaterialTheme.colorScheme.onPrimary,
+-                    style = MaterialTheme.typography.labelSmall,
+-                    fontWeight = FontWeight.Bold,
+-                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
++                Icon(
++                    Icons.Default.PlayArrow,
++                    contentDescription = stringResource(R.string.play_now),
++                    tint = Color.White,
++                    modifier = Modifier.size(34.dp)
+                 )
+             }
+         }
++        Spacer(Modifier.height(8.dp))
+         Text(
+-            text = trailer.name.ifEmpty { stringResource(R.string.trailers) },
++            displayTitle,
+             color = MaterialTheme.colorScheme.onBackground,
+-            style = MaterialTheme.typography.labelSmall,
+-            maxLines = 1,
+-            overflow = TextOverflow.Ellipsis,
+-            modifier = Modifier.align(Alignment.BottomStart).padding(8.dp)
++            style = MaterialTheme.typography.titleMedium,
++            fontWeight = FontWeight.SemiBold,
++            maxLines = 2,
++            overflow = TextOverflow.Ellipsis
+         )
+     }
+ }
+ 
+ @Composable
++private fun DetailsTrailerList(
++    primaryTrailer: VideoTrailer?,
++    otherTrailers: List<VideoTrailer>,
++    isLoading: Boolean,
++    onSelect: (VideoTrailer) -> Unit
++) {
++    val videos = remember(primaryTrailer, otherTrailers) {
++        (listOfNotNull(primaryTrailer) + otherTrailers).filter { it.key.isNotBlank() }.distinctBy { it.key }
++    }
++    when {
++        videos.isEmpty() && isLoading -> Box(
++            Modifier.fillMaxWidth().padding(vertical = 28.dp),
++            contentAlignment = Alignment.Center
++        ) {
++            CircularProgressIndicator()
++        }
++        videos.isEmpty() -> Text(
++            stringResource(R.string.details_no_trailers),
++            color = MaterialTheme.colorScheme.onSurfaceVariant,
++            modifier = Modifier.padding(horizontal = 18.dp, vertical = 22.dp)
++        )
++        else -> Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
++            videos.forEachIndexed { index, trailer ->
++                if (index > 0) Spacer(Modifier.height(18.dp))
++                TrailerCard(trailer = trailer) { onSelect(trailer) }
++            }
++            if (isLoading) {
++                Row(
++                    Modifier.fillMaxWidth().padding(vertical = 14.dp),
++                    horizontalArrangement = Arrangement.Center,
++                    verticalAlignment = Alignment.CenterVertically
++                ) {
++                    CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
++                }
++            }
++        }
++    }
++}
++
++@Composable
+ fun CastMemberCard(cast: CastMember, onClick: () -> Unit) {
+     val interactionSource = remember { MutableInteractionSource() }
+     val isPressed by interactionSource.collectIsPressedAsState()
+@@ -2510,16 +2446,28 @@
+ private fun DetailsCastSection(
+     cast: List<CastMember>,
+     onPersonClick: (String) -> Unit,
+-    keyPrefix: String
++    keyPrefix: String,
++    onSeeAll: (() -> Unit)? = null
+ ) {
+     Column(Modifier.fillMaxWidth().padding(top = 10.dp, bottom = 24.dp)) {
+-        Text(
+-            stringResource(R.string.cast),
+-            color = MaterialTheme.colorScheme.onBackground,
+-            style = MaterialTheme.typography.titleLarge,
+-            fontWeight = FontWeight.Bold,
+-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+-        )
++        Row(
++            Modifier.fillMaxWidth().padding(start = 16.dp, end = 12.dp, top = 8.dp, bottom = 8.dp),
++            verticalAlignment = Alignment.CenterVertically
++        ) {
++            Text(
++                stringResource(R.string.cast),
++                color = MaterialTheme.colorScheme.onBackground,
++                style = MaterialTheme.typography.titleLarge,
++                fontWeight = FontWeight.Bold,
++                modifier = Modifier.weight(1f)
++            )
++            if (onSeeAll != null) {
++                TextButton(onClick = onSeeAll) {
++                    Text(stringResource(R.string.see_all))
++                    Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null)
++                }
++            }
++        }
+         LazyRow(contentPadding = PaddingValues(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+             items(cast.distinctBy { it.id }, key = { "${keyPrefix}_cast_${it.id}" }) { member ->
+                 CastMemberCard(member) { onPersonClick(member.id) }
+@@ -2529,12 +2477,18 @@
+ }
+ 
+ @Composable
+-private fun DetailsRelatedMovieGrid(relatedItems: List<Movie>, onClick: (Movie) -> Unit) {
++private fun DetailsRelatedMovieGrid(
++    relatedItems: List<Movie>,
++    hasMore: Boolean,
++    isLoadingMore: Boolean,
++    onLoadMore: () -> Unit,
++    onClick: (Movie) -> Unit
++) {
+     Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp)) {
+         if (relatedItems.isEmpty()) {
+             Text(stringResource(R.string.details_no_related), color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(vertical = 18.dp))
+         } else {
+-            relatedItems.take(24).chunked(3).forEachIndexed { rowIndex, rowItems ->
++            relatedItems.chunked(3).forEachIndexed { rowIndex, rowItems ->
+                 Row(horizontalArrangement = Arrangement.spacedBy(11.dp), modifier = Modifier.fillMaxWidth()) {
+                     rowItems.forEach { movie ->
+                         Column(
+@@ -2553,19 +2507,38 @@
+                     }
+                     repeat(3 - rowItems.size) { Spacer(Modifier.weight(1f)) }
+                 }
+-                if (rowIndex < (relatedItems.take(24).size + 2) / 3 - 1) Spacer(Modifier.height(16.dp))
++                if (rowIndex < (relatedItems.size + 2) / 3 - 1) Spacer(Modifier.height(16.dp))
++            }
++        }
++        if (hasMore) {
++            TextButton(
++                onClick = onLoadMore,
++                enabled = !isLoadingMore,
++                modifier = Modifier.fillMaxWidth().padding(top = 12.dp)
++            ) {
++                if (isLoadingMore) {
++                    CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
++                    Spacer(Modifier.width(9.dp))
++                }
++                Text(stringResource(R.string.show_more))
+             }
+         }
+     }
+ }
+ 
+ @Composable
+-private fun DetailsRelatedSeriesGrid(relatedItems: List<Series>, onClick: (Series) -> Unit) {
++private fun DetailsRelatedSeriesGrid(
++    relatedItems: List<Series>,
++    hasMore: Boolean,
++    isLoadingMore: Boolean,
++    onLoadMore: () -> Unit,
++    onClick: (Series) -> Unit
++) {
+     Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp)) {
+         if (relatedItems.isEmpty()) {
+             Text(stringResource(R.string.details_no_related), color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(vertical = 18.dp))
+         } else {
+-            relatedItems.take(24).chunked(3).forEachIndexed { rowIndex, rowItems ->
++            relatedItems.chunked(3).forEachIndexed { rowIndex, rowItems ->
+                 Row(horizontalArrangement = Arrangement.spacedBy(11.dp), modifier = Modifier.fillMaxWidth()) {
+                     rowItems.forEach { series ->
+                         Column(
+@@ -2584,7 +2557,20 @@
+                     }
+                     repeat(3 - rowItems.size) { Spacer(Modifier.weight(1f)) }
+                 }
+-                if (rowIndex < (relatedItems.take(24).size + 2) / 3 - 1) Spacer(Modifier.height(16.dp))
++                if (rowIndex < (relatedItems.size + 2) / 3 - 1) Spacer(Modifier.height(16.dp))
++            }
++        }
++        if (hasMore) {
++            TextButton(
++                onClick = onLoadMore,
++                enabled = !isLoadingMore,
++                modifier = Modifier.fillMaxWidth().padding(top = 12.dp)
++            ) {
++                if (isLoadingMore) {
++                    CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
++                    Spacer(Modifier.width(9.dp))
++                }
++                Text(stringResource(R.string.show_more))
+             }
+         }
+     }
+@@ -2861,6 +2847,9 @@
+     onNavigateToExtensions: () -> Unit
+ ) {
+     var showSeasonPicker by rememberSaveable(series.id) { mutableStateOf(false) }
++    var showAllCredits by rememberSaveable(series.id, season.seasonNumber) { mutableStateOf(false) }
++    var selectedSeasonTrailerId by rememberSaveable(series.id, season.seasonNumber) { mutableStateOf<String?>(null) }
++    BackHandler(enabled = showAllCredits) { showAllCredits = false }
+     val posterImages = remember(season.posterImages, season.posterUrl, series.posterImages, series.posterUrl) {
+         (season.posterImages.ifEmpty { series.posterImages } + listOf(season.posterUrl.ifBlank { series.posterUrl }))
+             .filter { it.isNotBlank() }.distinct()
+@@ -2872,6 +2861,18 @@
+     val displaySeasonTitle = season.title.takeIf { it.isNotBlank() }
+         ?: stringResource(R.string.season_number, season.seasonNumber)
+ 
++    if (showAllCredits) {
++        SeasonCastAndCrewScreen(
++            seriesTitle = series.title,
++            seasonTitle = displaySeasonTitle,
++            cast = season.cast,
++            crew = season.crew,
++            onBack = { showAllCredits = false },
++            onPersonClick = onPersonClick
++        )
++        return
++    }
++
+     Column(
+         modifier = Modifier
+             .fillMaxSize()
+@@ -3025,10 +3026,53 @@
+                 }
+             }
+ 
+-            val seasonCast = season.cast.ifEmpty { series.cast }
+-            if (seasonCast.isNotEmpty()) {
++            if (season.cast.isNotEmpty() || season.crew.isNotEmpty()) {
+                 Spacer(Modifier.height(18.dp))
+-                DetailsCastSection(seasonCast, onPersonClick, keyPrefix = "season_${season.seasonNumber}")
++                if (season.cast.isNotEmpty()) {
++                    DetailsCastSection(
++                        season.cast,
++                        onPersonClick,
++                        keyPrefix = "season_${season.seasonNumber}",
++                        onSeeAll = { showAllCredits = true }
++                    )
++                } else {
++                    Row(
++                        Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
++                        verticalAlignment = Alignment.CenterVertically
++                    ) {
++                        Text(stringResource(R.string.crew), modifier = Modifier.weight(1f), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
++                        TextButton(onClick = { showAllCredits = true }) { Text(stringResource(R.string.see_all)) }
++                    }
++                }
++            }
++
++            if (season.trailers.isNotEmpty()) {
++                Spacer(Modifier.height(10.dp))
++                Text(
++                    stringResource(R.string.details_videos),
++                    color = MaterialTheme.colorScheme.onBackground,
++                    style = MaterialTheme.typography.titleLarge,
++                    fontWeight = FontWeight.Bold,
++                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
++                )
++                selectedSeasonTrailerId?.let { videoId ->
++                    Box(Modifier.fillMaxWidth().padding(horizontal = 16.dp).aspectRatio(16f / 9f)) {
++                        com.example.ui.components.InlineYouTubePlayer(
++                            videoId = videoId,
++                            modifier = Modifier.fillMaxSize(),
++                            onClose = { selectedSeasonTrailerId = null }
++                        )
++                    }
++                    Spacer(Modifier.height(12.dp))
++                }
++                LazyRow(
++                    contentPadding = PaddingValues(horizontal = 16.dp),
++                    horizontalArrangement = Arrangement.spacedBy(14.dp)
++                ) {
++                    items(season.trailers.distinctBy { it.key }, key = { "season_video_${season.seasonNumber}_${it.key}" }) { trailer ->
++                        SeasonVideoCard(trailer = trailer, onClick = { selectedSeasonTrailerId = trailer.key })
++                    }
++                }
+             }
+ 
+             if (posterImages.isNotEmpty()) {
+@@ -3086,3 +3130,241 @@
+         )
+     }
+ }
++
++@Composable
++private fun SeasonVideoCard(
++    trailer: VideoTrailer,
++    onClick: () -> Unit
++) {
++    val fallbackTitle = stringResource(R.string.details_videos)
++    val displayTitle = trailer.name.ifBlank { trailer.type.ifBlank { fallbackTitle } }
++    Column(
++        modifier = Modifier
++            .width(286.dp)
++            .clickable(onClick = onClick)
++    ) {
++        Box(
++            modifier = Modifier
++                .fillMaxWidth()
++                .aspectRatio(16f / 9f)
++                .clip(RoundedCornerShape(10.dp))
++                .background(MaterialTheme.colorScheme.surfaceVariant),
++            contentAlignment = Alignment.Center
++        ) {
++            AsyncImage(
++                model = "https://img.youtube.com/vi/${trailer.key}/hqdefault.jpg",
++                contentDescription = displayTitle,
++                contentScale = ContentScale.Crop,
++                modifier = Modifier.fillMaxSize()
++            )
++            Box(
++                Modifier
++                    .size(48.dp)
++                    .clip(CircleShape)
++                    .background(Color.Black.copy(alpha = 0.62f)),
++                contentAlignment = Alignment.Center
++            ) {
++                Icon(Icons.Default.PlayArrow, contentDescription = stringResource(R.string.play_now), tint = Color.White, modifier = Modifier.size(30.dp))
++            }
++        }
++        Spacer(Modifier.height(8.dp))
++        Text(
++            displayTitle,
++            color = MaterialTheme.colorScheme.onBackground,
++            style = MaterialTheme.typography.titleSmall,
++            fontWeight = FontWeight.SemiBold,
++            maxLines = 2,
++            overflow = TextOverflow.Ellipsis
++        )
++    }
++}
++
++@Composable
++private fun SeasonCastAndCrewScreen(
++    seriesTitle: String,
++    seasonTitle: String,
++    cast: List<CastMember>,
++    crew: List<CrewMember>,
++    onBack: () -> Unit,
++    onPersonClick: (String) -> Unit
++) {
++    val hasCast = cast.isNotEmpty()
++    val hasCrew = crew.isNotEmpty()
++    var selectedTab by rememberSaveable(seriesTitle, seasonTitle) {
++        mutableStateOf(if (hasCast) "CAST" else "CREW")
++    }
++    val departments = remember(crew) {
++        crew.filter { it.name.isNotBlank() }
++            .groupBy { it.department.ifBlank { "Crew" } }
++            .toList()
++    }
++
++    Column(
++        Modifier
++            .fillMaxSize()
++            .background(MaterialTheme.colorScheme.background)
++    ) {
++        Row(
++            Modifier
++                .fillMaxWidth()
++                .statusBarsPadding()
++                .padding(horizontal = 12.dp, vertical = 8.dp),
++            verticalAlignment = Alignment.CenterVertically
++        ) {
++            IconButton(onClick = onBack) {
++                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
++            }
++            Column(Modifier.weight(1f)) {
++                Text(
++                    "$seriesTitle · $seasonTitle".uppercase(),
++                    color = MaterialTheme.colorScheme.onSurfaceVariant,
++                    style = MaterialTheme.typography.labelSmall,
++                    maxLines = 1,
++                    overflow = TextOverflow.Ellipsis,
++                    letterSpacing = 1.2.sp
++                )
++                Text(
++                    stringResource(R.string.cast_and_crew),
++                    color = MaterialTheme.colorScheme.onBackground,
++                    style = MaterialTheme.typography.titleLarge,
++                    fontWeight = FontWeight.Bold
++                )
++            }
++        }
++
++        if (hasCast && hasCrew) {
++            Row(
++                Modifier
++                    .fillMaxWidth()
++                    .padding(horizontal = 18.dp, vertical = 12.dp)
++                    .clip(RoundedCornerShape(28.dp))
++                    .background(MaterialTheme.colorScheme.surfaceVariant)
++                    .padding(4.dp),
++                horizontalArrangement = Arrangement.spacedBy(4.dp)
++            ) {
++                listOf("CAST" to R.string.cast, "CREW" to R.string.crew).forEach { (tab, label) ->
++                    val selected = selectedTab == tab
++                    Surface(
++                        modifier = Modifier
++                            .weight(1f)
++                            .clip(RoundedCornerShape(24.dp))
++                            .clickable { selectedTab = tab },
++                        shape = RoundedCornerShape(24.dp),
++                        color = if (selected) MaterialTheme.colorScheme.primary else Color.Transparent
++                    ) {
++                        Box(Modifier.padding(vertical = 15.dp), contentAlignment = Alignment.Center) {
++                            Text(
++                                stringResource(label),
++                                color = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
++                                style = MaterialTheme.typography.titleMedium,
++                                fontWeight = FontWeight.Bold
++                            )
++                        }
++                    }
++                }
++            }
++        }
++
++        when {
++            selectedTab == "CAST" && hasCast -> LazyColumn(
++                modifier = Modifier.fillMaxSize(),
++                contentPadding = PaddingValues(top = 6.dp, bottom = 32.dp)
++            ) {
++                items(cast.sortedBy { it.order }, key = { "season_cast_${it.id}" }) { person ->
++                    val episodeLabel = if (person.episodeCount > 0) stringResource(R.string.episodes_count, person.episodeCount) else null
++                    SeasonCreditPersonRow(
++                        name = person.name,
++                        detail = listOfNotNull(person.character.takeIf { it.isNotBlank() }, episodeLabel).joinToString(" · "),
++                        profileUrl = person.profileUrl,
++                        onClick = { onPersonClick(person.id) }
++                    )
++                }
++            }
++            selectedTab == "CREW" && hasCrew -> LazyColumn(
++                modifier = Modifier.fillMaxSize(),
++                contentPadding = PaddingValues(top = 6.dp, bottom = 32.dp)
++            ) {
++                departments.forEach { (department, people) ->
++                    item(key = "season_crew_department_$department") {
++                        Text(
++                            department.uppercase(),
++                            color = MaterialTheme.colorScheme.onSurfaceVariant,
++                            style = MaterialTheme.typography.labelLarge,
++                            fontWeight = FontWeight.Bold,
++                            letterSpacing = 1.6.sp,
++                            modifier = Modifier.padding(start = 18.dp, end = 18.dp, top = 22.dp, bottom = 8.dp)
++                        )
++                    }
++                    items(people, key = { "season_crew_${department}_${it.id}" }) { person ->
++                        val episodeLabel = if (person.episodeCount > 0) stringResource(R.string.episodes_count, person.episodeCount) else null
++                        SeasonCreditPersonRow(
++                            name = person.name,
++                            detail = listOfNotNull(person.jobs.filter { it.isNotBlank() }.distinct().takeIf { it.isNotEmpty() }?.joinToString(", "), episodeLabel).joinToString(" · "),
++                            profileUrl = person.profileUrl,
++                            onClick = { onPersonClick(person.id) }
++                        )
++                    }
++                }
++            }
++            else -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
++                Text(stringResource(R.string.details_no_related), color = MaterialTheme.colorScheme.onSurfaceVariant)
++            }
++        }
++    }
++}
++
++@Composable
++private fun SeasonCreditPersonRow(
++    name: String,
++    detail: String,
++    profileUrl: String?,
++    onClick: () -> Unit
++) {
++    Row(
++        Modifier
++            .fillMaxWidth()
++            .clickable(onClick = onClick)
++            .padding(horizontal = 18.dp, vertical = 14.dp),
++        verticalAlignment = Alignment.CenterVertically
++    ) {
++        Box(
++            Modifier
++                .size(64.dp)
++                .clip(CircleShape)
++                .background(MaterialTheme.colorScheme.surfaceVariant),
++            contentAlignment = Alignment.Center
++        ) {
++            if (!profileUrl.isNullOrBlank()) {
++                AsyncImage(
++                    model = profileUrl,
++                    contentDescription = name,
++                    contentScale = ContentScale.Crop,
++                    modifier = Modifier.fillMaxSize()
++                )
++            } else {
++                Icon(Icons.Default.Person, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(28.dp))
++            }
++        }
++        Spacer(Modifier.width(16.dp))
++        Column(Modifier.weight(1f)) {
++            Text(
++                name,
++                color = MaterialTheme.colorScheme.onBackground,
++                style = MaterialTheme.typography.titleMedium,
++                fontWeight = FontWeight.Bold,
++                maxLines = 1,
++                overflow = TextOverflow.Ellipsis
++            )
++            if (detail.isNotBlank()) {
++                Spacer(Modifier.height(3.dp))
++                Text(
++                    detail,
++                    color = MaterialTheme.colorScheme.onSurfaceVariant,
++                    style = MaterialTheme.typography.bodyMedium,
++                    maxLines = 2,
++                    overflow = TextOverflow.Ellipsis
++                )
++            }
++        }
++    }
++}
+diff -ruN -x 'PHASE-37*' baseline/CINESTREAM-PRO/app/src/main/java/com/example/ui/screens/details/MovieDetailsViewModel.kt cine/CINESTREAM-PRO/app/src/main/java/com/example/ui/screens/details/MovieDetailsViewModel.kt
+--- baseline/CINESTREAM-PRO/app/src/main/java/com/example/ui/screens/details/MovieDetailsViewModel.kt	2026-10-30 17:13:02.000000000 +0000
++++ cine/CINESTREAM-PRO/app/src/main/java/com/example/ui/screens/details/MovieDetailsViewModel.kt	2026-10-31 01:47:33.910128890 +0000
+@@ -24,6 +24,11 @@
+     val isLoading: Boolean = false,
+     val movie: Movie? = null,
+     val similarMovies: List<Movie> = emptyList(),
++    val similarMoviesPage: Int = 0,
++    val similarMoviesTotalPages: Int = 1,
++    val isLoadingMoreSimilar: Boolean = false,
++    val similarMoviesLoaded: Boolean = false,
++    val similarMoviesAnimeOnly: Boolean = false,
+     val error: String? = null,
+     val primaryTrailer: VideoTrailer? = null,
+     val primaryTrailerRequestKey: String? = null,
+@@ -136,7 +141,6 @@
+             val videos = repository.getTrailers(mediaId, isMovie = true, language = locale, primaryOnly = false)
+             val primaryKey = _uiState.value.primaryTrailer?.key
+             val others = videos
+-                .filter { it.type.equals("Trailer", ignoreCase = true) }
+                 .filterNot { it.key == primaryKey }
+                 .distinctBy { it.key }
+             _uiState.update { state ->
+@@ -252,21 +256,69 @@
+ 
+     /** Loads genre-matched recommendations from the same TMDB Discover repository used by the app. */
+     fun loadSimilarMovies(movie: Movie, animeOnly: Boolean = false) {
++        if (_uiState.value.movie?.id == movie.id && _uiState.value.similarMoviesLoaded) return
+         viewModelScope.launch {
+             runCatching {
+                 repository.discoverMovies(
+                     MediaDiscoverRequest(
++                        page = 1,
+                         sortBy = "popularity.desc",
+                         genreIds = (if (animeOnly) listOf(16) else emptyList())
+                             .plus(movie.genreIds.take(2)).distinct(),
+                         minimumVoteCount = 10
+                     )
+-                ).items.filterNot { it.id == movie.id }
+-                    .filter { !animeOnly || it.language.equals("ja", ignoreCase = true) }
+-                    .take(20)
++                )
+             }.onSuccess { related ->
+                 _uiState.update { current ->
+-                    if (current.movie?.id == movie.id) current.copy(similarMovies = related) else current
++                    if (current.movie?.id == movie.id) current.copy(
++                        similarMovies = related.items.filterNot { it.id == movie.id }
++                            .filter { !animeOnly || it.language.equals("ja", ignoreCase = true) }
++                            .distinctBy { it.id },
++                        similarMoviesPage = related.page,
++                        similarMoviesTotalPages = related.totalPages.coerceAtLeast(1),
++                        isLoadingMoreSimilar = false,
++                        similarMoviesLoaded = true,
++                        similarMoviesAnimeOnly = animeOnly
++                    ) else current
++                }
++            }
++        }
++    }
++
++    /** Adds the next server-filtered page without changing the selected media mode. */
++    fun loadMoreSimilarMovies() {
++        val current = _uiState.value
++        val movie = current.movie ?: return
++        if (current.isLoadingMoreSimilar || !current.similarMoviesLoaded ||
++            current.similarMoviesPage >= current.similarMoviesTotalPages) return
++        val animeOnly = current.similarMoviesAnimeOnly
++        val nextPage = current.similarMoviesPage + 1
++        _uiState.update { it.copy(isLoadingMoreSimilar = true) }
++        viewModelScope.launch {
++            runCatching {
++                repository.discoverMovies(
++                    MediaDiscoverRequest(
++                        page = nextPage,
++                        sortBy = "popularity.desc",
++                        genreIds = (if (animeOnly) listOf(16) else emptyList())
++                            .plus(movie.genreIds.take(2)).distinct(),
++                        minimumVoteCount = 10
++                    )
++                )
++            }.onSuccess { page ->
++                val more = page.items.filterNot { it.id == movie.id }
++                    .filter { !animeOnly || it.language.equals("ja", ignoreCase = true) }
++                _uiState.update { state ->
++                    if (state.movie?.id == movie.id) state.copy(
++                        similarMovies = (state.similarMovies + more).distinctBy { it.id },
++                        similarMoviesPage = page.page,
++                        similarMoviesTotalPages = page.totalPages.coerceAtLeast(1),
++                        isLoadingMoreSimilar = false
++                    ) else state
++                }
++            }.onFailure {
++                _uiState.update { state ->
++                    if (state.movie?.id == movie.id) state.copy(isLoadingMoreSimilar = false) else state
+                 }
+             }
+         }
+diff -ruN -x 'PHASE-37*' baseline/CINESTREAM-PRO/app/src/main/java/com/example/ui/screens/details/SeriesDetailsViewModel.kt cine/CINESTREAM-PRO/app/src/main/java/com/example/ui/screens/details/SeriesDetailsViewModel.kt
+--- baseline/CINESTREAM-PRO/app/src/main/java/com/example/ui/screens/details/SeriesDetailsViewModel.kt	2026-10-31 00:13:24.000000000 +0000
++++ cine/CINESTREAM-PRO/app/src/main/java/com/example/ui/screens/details/SeriesDetailsViewModel.kt	2026-10-31 01:47:34.670080301 +0000
+@@ -27,6 +27,11 @@
+     val isLoading: Boolean = false,
+     val series: Series? = null,
+     val similarSeries: List<Series> = emptyList(),
++    val similarSeriesPage: Int = 0,
++    val similarSeriesTotalPages: Int = 1,
++    val isLoadingMoreSimilar: Boolean = false,
++    val similarSeriesLoaded: Boolean = false,
++    val similarSeriesAnimeOnly: Boolean = false,
+     val error: String? = null,
+     val selectedSeason: Season? = null,
+     val seasonDetails: Season? = null,
+@@ -199,7 +204,6 @@
+             val videos = repository.getTrailers(mediaId, isMovie = false, language = locale, primaryOnly = false)
+             val primaryKey = _uiState.value.primaryTrailer?.key
+             val others = videos
+-                .filter { it.type.equals("Trailer", ignoreCase = true) }
+                 .filterNot { it.key == primaryKey }
+                 .distinctBy { it.key }
+             _uiState.update { state ->
+@@ -222,20 +226,68 @@
+ 
+     /** Genre-aware related shelf. Anime is constrained to animation + Japanese originals. */
+     fun loadSimilarSeries(series: Series, animeOnly: Boolean) {
++        if (_uiState.value.series?.id == series.id && _uiState.value.similarSeriesLoaded) return
+         viewModelScope.launch {
+             runCatching {
+                 repository.discoverSeries(
+                     MediaDiscoverRequest(
++                        page = 1,
+                         sortBy = "popularity.desc",
+                         genreIds = (if (animeOnly) listOf(16) else emptyList())
+                             .plus(series.genreIds.take(2)).distinct(),
+                         minimumVoteCount = 10,
+                         animeOnly = animeOnly
+                     )
+-                ).items.filterNot { it.id == series.id }.take(20)
++                )
+             }.onSuccess { related ->
+                 _uiState.update { current ->
+-                    if (current.series?.id == series.id) current.copy(similarSeries = related) else current
++                    if (current.series?.id == series.id) current.copy(
++                        similarSeries = related.items.filterNot { it.id == series.id }.distinctBy { it.id },
++                        similarSeriesPage = related.page,
++                        similarSeriesTotalPages = related.totalPages.coerceAtLeast(1),
++                        isLoadingMoreSimilar = false,
++                        similarSeriesLoaded = true,
++                        similarSeriesAnimeOnly = animeOnly
++                    ) else current
++                }
++            }
++        }
++    }
++
++    /** Loads another page of related titles while retaining the same anime/series filters. */
++    fun loadMoreSimilarSeries() {
++        val current = _uiState.value
++        val series = current.series ?: return
++        if (current.isLoadingMoreSimilar || !current.similarSeriesLoaded ||
++            current.similarSeriesPage >= current.similarSeriesTotalPages) return
++        val animeOnly = current.similarSeriesAnimeOnly
++        val nextPage = current.similarSeriesPage + 1
++        _uiState.update { it.copy(isLoadingMoreSimilar = true) }
++        viewModelScope.launch {
++            runCatching {
++                repository.discoverSeries(
++                    MediaDiscoverRequest(
++                        page = nextPage,
++                        sortBy = "popularity.desc",
++                        genreIds = (if (animeOnly) listOf(16) else emptyList())
++                            .plus(series.genreIds.take(2)).distinct(),
++                        minimumVoteCount = 10,
++                        animeOnly = animeOnly
++                    )
++                )
++            }.onSuccess { page ->
++                val more = page.items.filterNot { it.id == series.id }
++                _uiState.update { state ->
++                    if (state.series?.id == series.id) state.copy(
++                        similarSeries = (state.similarSeries + more).distinctBy { it.id },
++                        similarSeriesPage = page.page,
++                        similarSeriesTotalPages = page.totalPages.coerceAtLeast(1),
++                        isLoadingMoreSimilar = false
++                    ) else state
++                }
++            }.onFailure {
++                _uiState.update { state ->
++                    if (state.series?.id == series.id) state.copy(isLoadingMoreSimilar = false) else state
+                 }
+             }
+         }
+@@ -556,17 +608,9 @@
+         val seriesId = currentSeries.id.substringBeforeLast("_")
+         if (!forceRefresh && _uiState.value.seasonDetailsLoadedFor == selected.seasonNumber &&
+             !_uiState.value.isSeasonDetailsLoading) return
+-        val hasLocalSeasonMetadata = selected.overview.isNotBlank() && !selected.airDate.isNullOrBlank()
+-        if (!forceRefresh && hasLocalSeasonMetadata) {
+-            _uiState.update {
+-                it.copy(
+-                    seasonDetails = selected,
+-                    seasonDetailsLoadedFor = selected.seasonNumber,
+-                    isSeasonDetailsLoading = false
+-                )
+-            }
+-            return
+-        }
++        // The series response only contains season summaries. Always fetch the season
++        // endpoint once so aggregate credits, season videos and poster/backdrop assets
++        // are populated even when the summary already has an overview and air date.
+         _uiState.update { it.copy(seasonDetails = it.seasonDetails ?: selected, isSeasonDetailsLoading = true) }
+         viewModelScope.launch {
+             val details = runCatching { repository.getSeasonDetails(seriesId, selected.seasonNumber) }.getOrNull()
+diff -ruN -x 'PHASE-37*' baseline/CINESTREAM-PRO/app/src/main/java/com/example/utils/MediaDetailsCacheManager.kt cine/CINESTREAM-PRO/app/src/main/java/com/example/utils/MediaDetailsCacheManager.kt
+--- baseline/CINESTREAM-PRO/app/src/main/java/com/example/utils/MediaDetailsCacheManager.kt	2026-10-31 00:07:02.000000000 +0000
++++ cine/CINESTREAM-PRO/app/src/main/java/com/example/utils/MediaDetailsCacheManager.kt	2026-10-31 01:51:25.036878121 +0000
+@@ -350,9 +350,22 @@
+                                 put("character", member.character)
+                                 put("profileUrl", member.profileUrl)
+                                 put("order", member.order)
++                                put("episodeCount", member.episodeCount)
+                             })
+                         }
+                         put("cast", seasonCastArray)
++                        val seasonCrewArray = JSONArray()
++                        season.crew.forEach { member ->
++                            seasonCrewArray.put(JSONObject().apply {
++                                put("id", member.id)
++                                put("name", member.name)
++                                put("department", member.department)
++                                put("jobs", JSONArray(member.jobs))
++                                put("profileUrl", member.profileUrl ?: JSONObject.NULL)
++                                put("episodeCount", member.episodeCount)
++                            })
++                        }
++                        put("crew", seasonCrewArray)
+                         val seasonTrailersArray = JSONArray()
+                         season.trailers.forEach { trailer ->
+                             seasonTrailersArray.put(JSONObject().apply {
+@@ -378,6 +391,7 @@
+                         put("character", member.character)
+                         put("profileUrl", member.profileUrl)
+                         put("order", member.order)
++                        put("episodeCount", member.episodeCount)
+                     })
+                 }
+                 put("cast", castArray)
+@@ -518,7 +532,23 @@
+                                 name = member.optString("name", ""),
+                                 character = member.optString("character", ""),
+                                 profileUrl = member.optString("profileUrl", "").ifBlank { null },
+-                                order = member.optInt("order", castIndex)
++                                order = member.optInt("order", castIndex),
++                                episodeCount = member.optInt("episodeCount", 0)
++                            ))
++                        }
++                    }
++                    val seasonCrew = mutableListOf<CrewMember>()
++                    val seasonCrewJson = s.optJSONArray("crew")
++                    if (seasonCrewJson != null) {
++                        for (crewIndex in 0 until seasonCrewJson.length()) {
++                            val member = seasonCrewJson.optJSONObject(crewIndex) ?: continue
++                            seasonCrew.add(CrewMember(
++                                id = member.optString("id", ""),
++                                name = member.optString("name", ""),
++                                department = member.optString("department", ""),
++                                jobs = readStringArray(member, "jobs"),
++                                profileUrl = member.optString("profileUrl", "").ifBlank { null },
++                                episodeCount = member.optInt("episodeCount", 0)
+                             ))
+                         }
+                     }
+@@ -549,6 +579,7 @@
+                         airDate = s.optString("airDate", "").ifBlank { null },
+                         rating = s.optDouble("rating", 0.0),
+                         cast = seasonCast.sortedBy { it.order },
++                        crew = seasonCrew,
+                         trailers = seasonTrailers,
+                         backdropImages = readStringArray(s, "backdropImages"),
+                         posterImages = readStringArray(s, "posterImages")
+diff -ruN -x 'PHASE-37*' baseline/CINESTREAM-PRO/app/src/main/res/values/strings.xml cine/CINESTREAM-PRO/app/src/main/res/values/strings.xml
+--- baseline/CINESTREAM-PRO/app/src/main/res/values/strings.xml	2026-10-31 00:03:56.000000000 +0000
++++ cine/CINESTREAM-PRO/app/src/main/res/values/strings.xml	2026-10-31 01:44:38.893912456 +0000
+@@ -28,6 +28,9 @@
+     <string name="profile">Profile</string>
+ <string name="overview">Overview</string>
+     <string name="cast">Cast</string>
++    <string name="crew">Crew</string>
++    <string name="cast_and_crew">Cast And Crew</string>
++    <string name="details_videos">Videos</string>
+     <string name="seasons_and_episodes">Seasons and Episodes</string>
+     <string name="season_number">Season %1$d</string>
+     <string name="about_this_season">About this season</string>
+diff -ruN -x 'PHASE-37*' baseline/CINESTREAM-PRO/app/src/main/res/values-ar/strings.xml cine/CINESTREAM-PRO/app/src/main/res/values-ar/strings.xml
+--- baseline/CINESTREAM-PRO/app/src/main/res/values-ar/strings.xml	2026-10-31 00:03:56.000000000 +0000
++++ cine/CINESTREAM-PRO/app/src/main/res/values-ar/strings.xml	2026-10-31 01:44:39.771910635 +0000
+@@ -27,6 +27,9 @@
+     <string name="profile">الحساب</string>
+ <string name="overview">نظرة عامة</string>
+     <string name="cast">طاقم العمل</string>
++    <string name="crew">الفريق</string>
++    <string name="cast_and_crew">طاقم التمثيل والفريق</string>
++    <string name="details_videos">الفيديوهات</string>
+     <string name="seasons_and_episodes">المواسم والحلقات</string>
+     <string name="season_number">الموسم %1$d</string>
+     <string name="about_this_season">عن هذا الموسم</string>

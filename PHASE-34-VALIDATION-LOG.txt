@@ -1,0 +1,23 @@
+PHASE 34 validation log
+Date: 2026-10-30
+Project: CINESTREAM-PRO
+
+PASS: Parsed all 13 XML files under app/src/main/res with Python ElementTree.
+PASS: English and Arabic strings.xml each contain 1318 string entries and no duplicate string names.
+PASS: All 117 R.string references found in the six changed Kotlin source files exist in both English and Arabic resources.
+PASS: No invalid \\xNN escape sequence found in English or Arabic strings.xml.
+PASS: Discover results CTA is positioned using the primary dock footprint plus the animated secondary dock footprint and navigation bar inset.
+PASS: Discover results CTA uses zIndex(2f) and animated 220ms secondary-dock offset.
+PASS: Secondary dock is composed above the primary dock; secondary width cap is 270dp and minimum height is 46dp.
+PASS: Primary dock normal height is 54dp and width cap is 360dp.
+PASS: Movie and series detail callbacks are wired for related titles, genre navigation, and Library navigation.
+PASS: ZIP archive was created and verified with unzip -t.
+
+NOT VERIFIED: Full Gradle assembleDebug / APK generation.
+Reason: ./gradlew --no-daemon --stacktrace assembleDebug stopped before project configuration because the Gradle 8.9 distribution could not be downloaded:
+java.net.UnknownHostException: services.gradle.org
+
+A standalone kotlinc parser pass was also attempted without the Android/Compose/Room/Retrofit dependency classpath. It is not a valid application compilation and is not counted as a build pass. No Kotlin parser-level "expecting" diagnostics were found, but full type checking remains the responsibility of GitHub Actions with the project's Gradle dependencies.
+PASS: Movie My List state reads MOVIE vs ANIME storage separately and uses the resolved anime marker.
+PASS: Series My List state reads TV vs ANIME storage separately and respects AnimePlaybackStore overrides.
+PASS: Standalone Kotlin compiler parser pass reported no syntax-level "expecting" / unexpected-token diagnostics. This was not a type-check because Android/Compose dependency classpath was unavailable.

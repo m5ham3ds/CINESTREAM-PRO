@@ -1,0 +1,30 @@
+PHASE 28 VALIDATION LOG
+Date: 2026-10-30
+
+SOURCE REVIEW
+- Zangetsu root_shell.dart reviewed: NotificationListener around the shared page body; scroll-triggered dock state; 340ms Cubic(0.32, 0.72, 0, 1) floating-dock transition.
+- Zangetsu dock_visibility.dart reviewed: 60 logical-pixel threshold, vertical-axis filtering, directional accumulation and reset policy.
+- Zangetsu _FloatingDock and _DockItem reviewed: label fold-away, pill width/height contraction and active-icon motion.
+- Zangetsu pubspec reviewed: liquid_glass_widgets 1.15.0 is Flutter-only; not imported into Kotlin/Compose.
+- CINESTREAM PRO BottomNavBar.kt and AppNavigation.kt reviewed before patch.
+
+IMPLEMENTATION
+- Center menu icon now reflects current Movies/Series/Search/Anime/Settings route.
+- Center button action remains a toggle for the secondary menu.
+- Added one root NestedScrollConnection above NavHost.
+- Added independent DockScrollCollapsePolicy with 60dp threshold, direction reversal and immediate top-edge expansion.
+- Main dock labels fold to zero layout height; icons and dock dimensions contract.
+- Selected destination glyph uses a 0.70-to-1.0 ease-out-back-style pop transition (380ms), including the centre menu glyph.
+- No new Gradle dependencies or version changes.
+
+VALIDATION RESULTS
+- DockScrollCollapsePolicy.kt compiled with local kotlinc: PASS.
+- Standalone policy smoke scenarios: PASS.
+- Six JUnit test cases added to app/src/test/java/com/example/ui/components/DockScrollCollapsePolicyTest.kt; pure policy smoke harness (including top-edge reset) PASS; JUnit suite not run through Gradle in this environment.
+- Source-level scan: all DockScrollCollapsePolicy call-sites use consumedY + availableY + current state; PASS.
+- ZIP archive integrity: PASS (verified after packaging).
+- assembleDebug / APK creation: NOT RUN; do not treat as build-confirmed.
+- Device animation / visual test: NOT RUN.
+
+KNOWN LIMITATION
+- Compose nested-scroll monitoring covers LazyColumn/verticalScroll and other Compose scrollables that dispatch nested scroll. AndroidView/WebView scroll surfaces may need explicit interop if used on one of the dock tabs.

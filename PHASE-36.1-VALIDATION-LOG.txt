@@ -1,0 +1,25 @@
+PHASE 36.1 validation log
+Date: 2026-10-31
+Project: CINESTREAM-PRO
+
+PASS: LazyColumn import exists exactly once
+PASS: share helper uses mediaRoute
+PASS: Intent type explicitly targets receiver
+PASS: old shadowing local val removed
+PASS: bad stickyHeader import removed
+PASS: stickyHeader call kept inside LazyColumn
+PASS: ExperimentalFoundation opt-in retained
+PASS: Android XML resources parse (13 files)
+PASS: values/strings.xml has no duplicate string names
+PASS: values-ar/strings.xml has no duplicate string names
+PASS: season picker now has LazyColumn scope
+
+BUILD STATUS: NOT VERIFIED
+Attempted: ./gradlew --offline --no-daemon :app:compileDebugKotlin
+Result: Gradle Wrapper could not start because Gradle 8.9 was not cached and services.gradle.org could not be resolved (UnknownHostException).
+No APK is claimed as built. The full Android/Compose dependency classpath was unavailable for an independent Kotlin type-check.
+
+Non-blocking warnings from the supplied GitHub Actions log:
+- AGP 8.7.2 was tested through compileSdk 35 while the project uses compileSdk 36.
+- Some native libraries could not be stripped and were packaged as-is.
+Neither warning caused this build failure; the logged task failure was compileDebugKotlin.

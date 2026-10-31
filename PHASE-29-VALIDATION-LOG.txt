@@ -1,0 +1,29 @@
+PHASE 29 VALIDATION LOG
+Date: 2026-10-30
+
+SOURCE REVIEW
+- Reviewed Zangetsu RevealItem implementation: PASS
+- Reviewed Zangetsu ContentRow usage: PASS
+- Confirmed rise animation constants (28px, 380ms, 0.94 scale, 45ms stagger, 8 buckets): PASS
+
+CODE CHANGES
+- Bottom dock expanded label slot increased to 16dp: PASS (static inspection)
+- Primary dock natural height increased to 72dp; collapsed height remains 54dp: PASS (static inspection)
+- Main and centre labels use fixed line height, centered width, single line and clipping: PASS (static inspection)
+- MediaCard reveal is gated by clipped visible bounds, not composition alone: PASS (static inspection)
+- Stable saveable key prevents repeated reveal after lazy list recreation: PASS (static inspection)
+- Empty poster placeholders without media IDs bypass reveal and remain visible: PASS (static inspection)
+- Sequential reveal index passed from itemsIndexed lists: PASS (static inspection)
+- No new external dependency added: PASS
+
+TESTS
+- MediaCardRevealPolicy.kt compiled with kotlinc 1.9.0: PASS
+- Standalone reveal-policy smoke test (8 assertions): PASS
+- Indexed reveal wiring checked across 23 MediaCard call sites: PASS (static check)
+- Unit test source added: MediaCardRevealPolicyTest.kt
+- Full Gradle unit tests: NOT RUN (Gradle 8.9 distribution unavailable; services.gradle.org DNS failure)
+- assembleDebug: NOT RUN
+- Physical device animation/layout check: NOT RUN
+
+ARCHIVE
+- ZIP integrity: to be checked after packaging.

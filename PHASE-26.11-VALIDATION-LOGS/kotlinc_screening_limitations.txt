@@ -1,0 +1,3 @@
+Kotlin manual screening notes
+
+A standalone `kotlinc` invocation was attempted on changed Kotlin files without the Android/Gradle dependency classpath. It produced unresolved-reference and ambiguity diagnostics because the project classpath (Android SDK and Gradle dependencies) is not available in this environment. This is NOT a valid app compilation and is NOT counted as a passing test. No `expecting` / `unexpected tokens` syntax-parser diagnostics were found in the filtered output, but this is not a substitute for Gradle compilation.

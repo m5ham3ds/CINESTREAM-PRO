@@ -1,0 +1,247 @@
+{
+  "passed": 48,
+  "total": 48,
+  "failed": [],
+  "checks": [
+    {
+      "name": "values XML parses",
+      "passed": true,
+      "details": "1223 entries"
+    },
+    {
+      "name": "values has no duplicate resource names",
+      "passed": true,
+      "details": "[]"
+    },
+    {
+      "name": "values-ar XML parses",
+      "passed": true,
+      "details": "1223 entries"
+    },
+    {
+      "name": "values-ar has no duplicate resource names",
+      "passed": true,
+      "details": "[]"
+    },
+    {
+      "name": "all source R.string refs exist in values",
+      "passed": true,
+      "details": "[]"
+    },
+    {
+      "name": "all source R.string refs exist in values-ar",
+      "passed": true,
+      "details": "[]"
+    },
+    {
+      "name": "homepage drawable refs all exist",
+      "passed": true,
+      "details": "[]"
+    },
+    {
+      "name": "home_provider_netflix.png valid PNG",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "name": "home_provider_prime.png valid PNG",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "name": "home_provider_disney.png valid PNG",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "name": "home_provider_hulu.png valid PNG",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "name": "home_provider_max.png valid PNG",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "name": "home_provider_apple_tv.png valid PNG",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "name": "home_provider_peacock.png valid PNG",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "name": "home_provider_itunes.png valid PNG",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "name": "home_provider_youtube.png valid PNG",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "name": "home_provider_paramount.png valid PNG",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "name": "weekly movie flow interface",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "name": "weekly series flow interface",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "name": "movies by provider interface",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "name": "series by provider interface",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "name": "weekly movie flow implementation",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "name": "weekly series flow implementation",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "name": "movies by provider implementation",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "name": "series by provider implementation",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "name": "TMDB watch providers and region params wired",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "name": "pinned home header in populated list",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "name": "home header displayed before loading/error skeleton",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "name": "All Movies Series Categories filters",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "name": "Hero max ten items",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "name": "Hero interval seven seconds",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "name": "Hero pauses during vertical home scrolling",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "name": "Hero metadata fields present",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "name": "shared on-demand feeds cached",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "name": "daily weekly provider service top-rated genre rows wired",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "name": "duplicate top app bar hidden only on Home",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "name": "protected unchanged .firebaserc",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "name": "protected unchanged firebase.json",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "name": "protected unchanged firestore.rules",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "name": "protected unchanged app/google-services.json",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "name": "protected unchanged app/build.gradle.kts",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "name": "protected unchanged gradle/libs.versions.toml",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "name": "protected unchanged app/src/main/java/com/example/extension/managed/scraper/QfilmScraper.kt",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "name": "protected unchanged app/src/main/java/com/example/extension/managed/playback/PlaybackAttempt.kt",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "name": "protected unchanged app/src/main/java/com/example/extension/managed/searchorder/SearchOrderRepository.kt",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "name": "no baseline project files deleted",
+      "passed": true,
+      "details": "[]"
+    },
+    {
+      "name": "no ZIP inside project",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "name": "integration report exists",
+      "passed": true,
+      "details": ""
+    }
+  ]
+}

@@ -1,0 +1,37 @@
+Static validation for Zangetsu + FlixQuest navigation integration
+Passed: 29/29
+Base source files absent after work: 0
+New source files: 4
+Gradle compile: NOT COMPLETED; Gradle Wrapper attempted Gradle 8.9 download and failed with UnknownHostException: services.gradle.org.
+APK build: NOT VERIFIED.
+
+Checks:
+PASS | Zangetsu-main.zip ZIP integrity | 2119 entries
+PASS | flixquest-main.zip ZIP integrity | 1358 entries
+PASS | CINESTREAM-PRO-FLIXQUEST-HOMEPAGE.zip ZIP integrity | 607 entries
+PASS | values XML well-formed | 
+PASS | values unique string IDs | 1254
+PASS | values-ar XML well-formed | 
+PASS | values-ar unique string IDs | 1254
+PASS | values all touched string references exist | []
+PASS | values-ar all touched string references exist | []
+PASS | Screen route Home defined | 
+PASS | Screen route NewAndHot defined | 
+PASS | Screen route Discover defined | 
+PASS | Screen route Profile defined | 
+PASS | Screen route Movies defined | 
+PASS | Screen route Series defined | 
+PASS | Screen route Search defined | 
+PASS | Screen route Anime defined | 
+PASS | Screen route Settings defined | 
+PASS | NavHost route NewAndHot registered | 
+PASS | NavHost route Discover registered | 
+PASS | NavHost route Movies registered | 
+PASS | NavHost route Series registered | 
+PASS | NavHost route Search registered | 
+PASS | NavHost route Anime registered | 
+PASS | NavHost route Settings registered | 
+PASS | NavHost route Profile registered | 
+PASS | No base files deleted | 0 missing
+PASS | New & Hot screen exists | 
+PASS | Discover screen exists | 

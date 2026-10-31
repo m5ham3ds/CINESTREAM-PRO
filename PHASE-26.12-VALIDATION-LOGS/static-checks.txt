@@ -1,0 +1,14 @@
+Phase 26.12 static checks
+=========================
+PASS: QfilmScraper imports org.jsoup.Jsoup.
+PASS: searchUrl is declared before the try/catch in QfilmScraper.search.
+PASS: ConfiguredSearchUrl.build assigns into the outer searchUrl variable.
+PASS: Cloudflare catch retains challengeUrl = searchUrl.
+PASS: TurnstilePositioningEngine is defined in com.example.ui.components.
+PASS: InteractiveChallengeWebView call resolves by package to the new engine object.
+PASS: positioning engine includes fixedInitialScrollPx = 320 fallback.
+PASS: positioning engine throttles repeated attempts and keys retries by attempt ID.
+PASS: positioning engine does not automate clicking / bypassing the verification challenge.
+
+Result: 9/9 static checks passed.
+Note: This is not a complete Android Gradle build.

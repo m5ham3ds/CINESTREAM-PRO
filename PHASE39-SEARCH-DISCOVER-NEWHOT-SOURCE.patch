@@ -1,0 +1,489 @@
+--- a/app/src/main/java/com/example/ui/screens/search/SearchScreen.kt
++++ b/app/src/main/java/com/example/ui/screens/search/SearchScreen.kt
+@@ -720,33 +720,36 @@
+     Column(Modifier.fillMaxWidth().padding(bottom = 10.dp)) {
+         SearchSectionTitle(title)
+         androidx.compose.foundation.layout.BoxWithConstraints(
+-            modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp)
++            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)
+         ) {
++            // FlixQuest uses two compact, equal-width tiles per row on phones
++            // (four on tablets), rather than oversized filter chips.
++            val columns = if (maxWidth >= 700.dp) 4 else 2
+             val gap = 10.dp
+-            val tileWidth = (maxWidth - gap) / 2
++            val tileWidth = (maxWidth - gap * (columns - 1)) / columns
+             FlowRow(
+                 modifier = Modifier.fillMaxWidth(),
+-                maxItemsInEachRow = 2,
++                maxItemsInEachRow = columns,
+                 horizontalArrangement = Arrangement.spacedBy(gap),
+-                verticalArrangement = Arrangement.spacedBy(10.dp)
++                verticalArrangement = Arrangement.spacedBy(gap)
+             ) {
+                 genres.forEach { genre ->
+                     Row(
+                         modifier = Modifier
+                             .width(tileWidth)
+-                            .height(72.dp)
+-                            .clip(RoundedCornerShape(14.dp))
++                            .height(52.dp)
++                            .clip(RoundedCornerShape(6.dp))
+                             .background(MaterialTheme.colorScheme.surface)
+                             .clickable { onGenreClick(genre) }
+-                            .padding(horizontal = 16.dp),
++                            .padding(horizontal = 14.dp),
+                         verticalAlignment = Alignment.CenterVertically
+                     ) {
+                         Text(
+                             genre.name,
+-                            maxLines = 2,
++                            maxLines = 1,
+                             overflow = TextOverflow.Ellipsis,
+                             fontSize = 15.sp,
+-                            lineHeight = 19.sp,
++                            lineHeight = 18.sp,
+                             fontWeight = FontWeight.SemiBold,
+                             color = MaterialTheme.colorScheme.onSurface
+                         )
+--- a/app/src/main/java/com/example/ui/screens/home/DiscoverScreen.kt
++++ b/app/src/main/java/com/example/ui/screens/home/DiscoverScreen.kt
+@@ -434,34 +434,76 @@
+             item {
+                 DiscoverSection(stringResource(R.string.streaming_on)) {
+                     BoxWithConstraints {
+-                        val tileWidth = (maxWidth - 20.dp) / 3
+-                        FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
++                        val columns = if (maxWidth >= 700.dp) 5 else 3
++                        val spacing = 10.dp
++                        val tileWidth = (maxWidth - spacing * (columns - 1)) / columns
++                        FlowRow(
++                            horizontalArrangement = Arrangement.spacedBy(spacing),
++                            verticalArrangement = Arrangement.spacedBy(spacing)
++                        ) {
++                            // Keep the exact provider order and TMDB IDs from
++                            // FlixQuest's DiscoverQuery. Only the tile geometry
++                            // changes here; filter semantics remain untouched.
+                             for (provider in homeStreamingServices.distinctBy { it.providerId }) {
+                                 val selected = provider.providerId in filters.providers
+-                                Surface(
+-                                    modifier = Modifier.width(tileWidth).height(68.dp)
++                                Box(
++                                    modifier = Modifier
++                                        .width(tileWidth)
++                                        .height(tileWidth * 0.58f)
+                                         .border(
+-                                            BorderStroke(if (selected) 2.dp else 1.dp, if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant.copy(alpha = .35f)),
+-                                            RoundedCornerShape(12.dp)
++                                            BorderStroke(
++                                                2.dp,
++                                                if (selected) MaterialTheme.colorScheme.onBackground
++                                                else Color.Transparent
++                                            ),
++                                            RoundedCornerShape(10.dp)
+                                         )
+-                                        .clip(RoundedCornerShape(12.dp))
++                                        .clip(RoundedCornerShape(10.dp))
+                                         .clickable {
+-                                            filters.providers = if (selected) filters.providers - provider.providerId else filters.providers + provider.providerId
+-                                        },
+-                                    shape = RoundedCornerShape(12.dp),
+-                                    color = Color(0xFFF4F4F4)
+-                                ) {
+-                                    Box(Modifier.fillMaxSize().padding(8.dp), contentAlignment = Alignment.Center) {
+-                                        Image(painter = painterResource(id = provider.logoResId), contentDescription = provider.name, contentScale = ContentScale.Fit, modifier = Modifier.fillMaxSize())
+-                                        if (selected) {
+-                                            Surface(
+-                                                modifier = Modifier.align(Alignment.TopEnd).size(20.dp),
+-                                                shape = RoundedCornerShape(50),
+-                                                color = Color(0xFF141414)
+-                                            ) {
+-                                                Icon(Icons.Default.Check, contentDescription = null, tint = Color.White, modifier = Modifier.padding(3.dp))
++                                            filters.providers = if (selected) {
++                                                filters.providers - provider.providerId
++                                            } else {
++                                                filters.providers + provider.providerId
+                                             }
+                                         }
++                                        .padding(3.dp)
++                                        .clip(RoundedCornerShape(7.dp))
++                                        .background(Color(0xFFF2F2F3))
++                                ) {
++                                    Image(
++                                        painter = painterResource(id = provider.logoResId),
++                                        contentDescription = provider.name,
++                                        contentScale = ContentScale.Fit,
++                                        modifier = Modifier
++                                            .fillMaxSize()
++                                            .padding(horizontal = 12.dp, vertical = 8.dp)
++                                    )
++                                    if (provider.name.endsWith("Kids")) {
++                                        Text(
++                                            text = "KIDS",
++                                            color = Color(0xFF141516),
++                                            fontSize = 9.sp,
++                                            lineHeight = 10.sp,
++                                            letterSpacing = 1.2.sp,
++                                            fontWeight = FontWeight.Bold,
++                                            modifier = Modifier
++                                                .align(Alignment.BottomStart)
++                                                .padding(start = 6.dp, bottom = 4.dp)
++                                        )
++                                    }
++                                    if (selected) {
++                                        Surface(
++                                            modifier = Modifier.align(Alignment.TopEnd).padding(4.dp).size(18.dp),
++                                            shape = RoundedCornerShape(50),
++                                            color = Color(0xFF141516)
++                                        ) {
++                                            Icon(
++                                                Icons.Default.Check,
++                                                contentDescription = null,
++                                                tint = Color.White,
++                                                modifier = Modifier.padding(3.dp)
++                                            )
++                                        }
+                                     }
+                                 }
+                             }
+--- a/app/src/main/java/com/example/ui/screens/home/NewAndHotScreen.kt
++++ b/app/src/main/java/com/example/ui/screens/home/NewAndHotScreen.kt
+@@ -1,6 +1,5 @@
+ package com.example.ui.screens.home
+ 
+-import androidx.compose.foundation.background
+ import androidx.compose.foundation.clickable
+ import androidx.compose.foundation.layout.*
+ import androidx.compose.foundation.lazy.LazyColumn
+@@ -15,7 +14,6 @@
+ import androidx.compose.material3.ButtonDefaults
+ import androidx.compose.material3.CircularProgressIndicator
+ import androidx.compose.material3.MaterialTheme
+-import androidx.compose.material3.OutlinedButton
+ import androidx.compose.material3.Surface
+ import androidx.compose.material3.Text
+ import androidx.compose.runtime.*
+@@ -40,10 +38,16 @@
+ import com.example.data.model.LibraryItem
+ import com.example.data.repository.LibraryRepository
+ import com.example.data.util.ContentTypeResolver
++import com.example.data.util.TmdbGenreHelper
++import com.example.data.remote.RetrofitClient
+ import com.example.ui.ViewModelFactory
++import kotlinx.coroutines.CancellationException
++import kotlinx.coroutines.Dispatchers
+ import kotlinx.coroutines.launch
++import kotlinx.coroutines.withContext
+ import java.time.LocalDate
+ import java.time.format.DateTimeFormatter
++import java.util.LinkedHashMap
+ import java.util.Locale
+ 
+ private enum class HotSection {
+@@ -210,8 +214,8 @@
+                 Surface(
+                     onClick = { sectionName = value.name },
+                     shape = RoundedCornerShape(50),
+-                    color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
+-                    contentColor = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
++                    color = if (selected) Color(0xFFF2F2F3) else MaterialTheme.colorScheme.surfaceVariant,
++                    contentColor = if (selected) Color(0xFF141516) else MaterialTheme.colorScheme.onSurfaceVariant
+                 ) {
+                     Text(
+                         text = label,
+@@ -240,23 +244,49 @@
+                     } else {
+                         LazyColumn(
+                             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 110.dp),
+-                            verticalArrangement = Arrangement.spacedBy(26.dp)
++                            verticalArrangement = Arrangement.spacedBy(28.dp)
+                         ) {
+                             items(upcomingEntries, key = { it.date.toString() }) { group ->
+-                                Column(verticalArrangement = Arrangement.spacedBy(18.dp)) {
+-                                    Text(
+-                                        text = group.date.format(DateTimeFormatter.ofPattern("EEE, MMM d", Locale.getDefault())).uppercase(),
+-                                        color = MaterialTheme.colorScheme.primary,
+-                                        style = MaterialTheme.typography.labelLarge.copy(letterSpacing = 1.4.sp, fontWeight = FontWeight.Bold)
+-                                    )
+-                                    group.entries.forEach { entry ->
+-                                        HotFeatureCard(
+-                                            entry = entry,
+-                                            showPlay = false,
+-                                            onOpen = { openEntry(entry, onMovieClick, onSeriesClick) },
+-                                            onPlay = { playEntry(entry, onPlayMovie, onPlaySeries) }
++                                Row(
++                                    modifier = Modifier.fillMaxWidth(),
++                                    verticalAlignment = Alignment.Top
++                                ) {
++                                    Column(
++                                        modifier = Modifier.width(68.dp).padding(top = 2.dp),
++                                        horizontalAlignment = Alignment.CenterHorizontally
++                                    ) {
++                                        Text(
++                                            text = group.date.format(DateTimeFormatter.ofPattern("MMM", Locale.getDefault()))
++                                                .uppercase(Locale.getDefault()),
++                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
++                                            style = MaterialTheme.typography.labelLarge.copy(
++                                                letterSpacing = 2.1.sp,
++                                                fontWeight = FontWeight.Bold
++                                            ),
++                                            maxLines = 1
++                                        )
++                                        Text(
++                                            text = group.date.dayOfMonth.toString(),
++                                            color = MaterialTheme.colorScheme.onBackground,
++                                            fontSize = 42.sp,
++                                            lineHeight = 44.sp,
++                                            fontWeight = FontWeight.ExtraBold,
++                                            maxLines = 1
+                                         )
+                                     }
++                                    Spacer(Modifier.width(12.dp))
++                                    Column(
++                                        modifier = Modifier.weight(1f),
++                                        verticalArrangement = Arrangement.spacedBy(24.dp)
++                                    ) {
++                                        group.entries.forEach { entry ->
++                                            ComingSoonFeatureCard(
++                                                entry = entry,
++                                                date = group.date,
++                                                onOpen = { openEntry(entry, onMovieClick, onSeriesClick) }
++                                            )
++                                        }
++                                    }
+                                 }
+                             }
+                         }
+@@ -289,6 +319,180 @@
+     }
+ }
+ 
++/**
++ * Small session cache for the optional logo artwork used on Coming Soon.
++ * The lookup follows FlixQuest's /movie|tv/{id} images.logo selection rule,
++ * but uses CineStream's existing authenticated Cloudflare TMDB gateway.
++ */
++private object HotTitleLogoCache {
++    private const val MAX_ENTRIES = 240
++    private val cache = LinkedHashMap<String, String?>(32, 0.75f, true)
++
++    suspend fun resolve(media: HomeMixedMediaItem, language: String): String? {
++        val numericId = media.id.toIntOrNull() ?: return null
++        val languageCode = language.lowercase(Locale.ROOT).substringBefore('-').substringBefore('_')
++        val key = "${media.contentType}:$numericId:$languageCode"
++        synchronized(cache) {
++            if (cache.containsKey(key)) return cache[key]
++        }
++
++        val logo = try {
++            withContext(Dispatchers.IO) {
++                val tmdbLanguage = if (languageCode == "ar") "ar-SA" else "en-US"
++                val images = if (media.contentType == ContentType.MOVIE) {
++                    RetrofitClient.tmdbApi.getMovieDetails(
++                        numericId,
++                        language = tmdbLanguage,
++                        appendToResponse = "images"
++                    ).data?.images
++                } else {
++                    RetrofitClient.tmdbApi.getSeriesDetails(
++                        numericId,
++                        language = tmdbLanguage,
++                        appendToResponse = "images"
++                    ).data?.images
++                }
++                val candidates = images?.logos.orEmpty().filter { image ->
++                    val path = image.filePath.orEmpty()
++                    path.isNotBlank() && !path.lowercase(Locale.ROOT).endsWith(".svg") &&
++                        (image.language == languageCode || image.language == "en" || image.language == null)
++                }
++                fun languageTier(code: String?): Int = when (code) {
++                    languageCode -> 0
++                    "en" -> 1
++                    null -> 2
++                    else -> 3
++                }
++                candidates.sortedWith(
++                    compareBy<com.example.data.remote.TmdbImage> { languageTier(it.language) }
++                        .thenBy { image ->
++                            val width = image.width?.toDouble() ?: 0.0
++                            val height = image.height?.toDouble() ?: 0.0
++                            if (height > 0.0 && width / height < 1.0) 1 else 0
++                        }
++                        .thenByDescending { it.voteAverage ?: 0.0 }
++                ).firstOrNull()?.fullUrl("w500")
++            }
++        } catch (cancelled: CancellationException) {
++            throw cancelled
++        } catch (_: Exception) {
++            // Do not cache a network failure; a later visit may retry it.
++            return null
++        }
++
++        // Cache successful empty lookups as well, so titles with no TMDB logo
++        // do not generate a new request on every recomposition.
++        synchronized(cache) {
++            cache[key] = logo
++            while (cache.size > MAX_ENTRIES) {
++                val firstKey = cache.entries.iterator().let { if (it.hasNext()) it.next().key else null }
++                if (firstKey == null) break
++                cache.remove(firstKey)
++            }
++        }
++        return logo
++    }
++}
++
++@Composable
++private fun ComingSoonFeatureCard(
++    entry: HotEntry,
++    date: LocalDate,
++    onOpen: () -> Unit
++) {
++    val item = entry.media
++    val context = LocalContext.current
++    val language = remember(context) { TmdbGenreHelper.getCurrentLanguage(context) }
++    val cacheKey = remember(item.id, item.contentType, language) {
++        "${item.contentType}:${item.id}:$language"
++    }
++    var logoUrl by remember(cacheKey) { mutableStateOf<String?>(null) }
++    LaunchedEffect(cacheKey) {
++        logoUrl = HotTitleLogoCache.resolve(item, language)
++    }
++
++    val genreNames = remember(item.genreIds, item.contentType, language) {
++        when (item.contentType) {
++            ContentType.MOVIE -> TmdbGenreHelper.getMovieGenreNames(item.genreIds, language)
++            ContentType.ANIME -> TmdbGenreHelper.getAnimeGenres(language)
++                .filter { it.id in item.genreIds }.map { it.name }
++            else -> TmdbGenreHelper.getTvGenreNames(item.genreIds, language)
++        }
++    }
++    val typeLabel = when (item.contentType) {
++        ContentType.MOVIE -> stringResource(R.string.movie_singular)
++        ContentType.ANIME -> stringResource(R.string.anime)
++        else -> stringResource(R.string.series_singular)
++    }
++    val dateLabel = date.format(DateTimeFormatter.ofPattern("MMM d", Locale.getDefault()))
++    val premiereText = stringResource(
++        if (item.contentType == ContentType.MOVIE) R.string.coming_date else R.string.premieres_date,
++        dateLabel
++    )
++
++    Column(Modifier.fillMaxWidth().clickable(onClick = onOpen)) {
++        AsyncImage(
++            model = item.backdropUrl.ifBlank { item.posterUrl },
++            contentDescription = item.title,
++            contentScale = ContentScale.Crop,
++            modifier = Modifier.fillMaxWidth()
++                .aspectRatio(16f / 9f)
++                .clip(RoundedCornerShape(6.dp))
++        )
++        Spacer(Modifier.height(12.dp))
++        if (!logoUrl.isNullOrBlank()) {
++            AsyncImage(
++                model = logoUrl,
++                contentDescription = item.title,
++                contentScale = ContentScale.Fit,
++                alignment = Alignment.CenterStart,
++                modifier = Modifier.fillMaxWidth(0.88f).height(48.dp)
++            )
++        } else {
++            Text(
++                text = item.title,
++                color = MaterialTheme.colorScheme.onBackground,
++                style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.ExtraBold),
++                maxLines = 2,
++                overflow = TextOverflow.Ellipsis,
++                modifier = Modifier
++            )
++        }
++        Spacer(Modifier.height(7.dp))
++        Text(
++            text = premiereText.uppercase(Locale.getDefault()),
++            color = MaterialTheme.colorScheme.primary,
++            style = MaterialTheme.typography.labelLarge.copy(
++                fontSize = 12.sp,
++                letterSpacing = 1.5.sp,
++                fontWeight = FontWeight.Bold
++            ),
++            maxLines = 1,
++            overflow = TextOverflow.Ellipsis
++        )
++        Spacer(Modifier.height(8.dp))
++        Text(
++            text = (listOf(typeLabel) + genreNames).joinToString(" · "),
++            color = MaterialTheme.colorScheme.onSurfaceVariant,
++            style = MaterialTheme.typography.bodyMedium,
++            maxLines = 1,
++            overflow = TextOverflow.Ellipsis
++        )
++        if (entry.overview.isNotBlank()) {
++            Spacer(Modifier.height(9.dp))
++            Text(
++                text = entry.overview,
++                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.86f),
++                style = MaterialTheme.typography.bodyLarge,
++                maxLines = if (androidx.compose.ui.platform.LocalConfiguration.current.screenWidthDp >= 600) 4 else 2,
++                overflow = TextOverflow.Ellipsis
++            )
++        }
++        Spacer(Modifier.height(14.dp))
++        HotMyListButton(item)
++    }
++}
++
+ @Composable
+ private fun HotFeatureCard(
+     entry: HotEntry,
+@@ -367,7 +571,7 @@
+     }
+     val saved by repository.isItemInLibrary(item.id, libraryType, "subtitled").collectAsState(initial = false)
+     var busy by remember(item.id) { mutableStateOf(false) }
+-    OutlinedButton(
++    Button(
+         onClick = {
+             if (!busy) scope.launch {
+                 busy = true
+@@ -386,7 +590,15 @@
+                 }
+             }
+         },
+-        enabled = !busy
++        enabled = !busy,
++        shape = RoundedCornerShape(10.dp),
++        contentPadding = PaddingValues(horizontal = 20.dp, vertical = 12.dp),
++        colors = ButtonDefaults.buttonColors(
++            containerColor = MaterialTheme.colorScheme.surfaceVariant,
++            contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
++            disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f),
++            disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f)
++        )
+     ) {
+         if (busy) {
+             CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp)
+--- a/app/src/main/res/values/strings.xml
++++ b/app/src/main/res/values/strings.xml
+@@ -97,7 +97,9 @@
+ <string name="trending_now">Trending Now</string>
+     <string name="continue_watching">Continue Watching</string>
+     <string name="trending_series">Trending Series</string>
+-    <string name="coming_soon">Coming Soon</string>
++        <string name="coming_date">COMING %1$s</string>
++    <string name="premieres_date">PREMIERES %1$s</string>
++<string name="coming_soon">Coming Soon</string>
+     <string name="new_releases">New Releases</string>
+     <string name="popular_series">Popular Series</string>
+     <string name="popular_movies">Popular Movies</string>
+--- a/app/src/main/res/values-ar/strings.xml
++++ b/app/src/main/res/values-ar/strings.xml
+@@ -96,7 +96,9 @@
+ <string name="trending_now">رائج الآن</string>
+     <string name="continue_watching">متابعة المشاهدة</string>
+     <string name="trending_series">مسلسلات رائجة</string>
+-    <string name="coming_soon">قريباً</string>
++        <string name="coming_date">قريبًا في %1$s</string>
++    <string name="premieres_date">يبدأ العرض في %1$s</string>
++<string name="coming_soon">قريباً</string>
+     <string name="new_releases">أحدث الإصدارات</string>
+     <string name="popular_series">مسلسلات شهيرة</string>
+     <string name="popular_movies">أفلام شهيرة</string>

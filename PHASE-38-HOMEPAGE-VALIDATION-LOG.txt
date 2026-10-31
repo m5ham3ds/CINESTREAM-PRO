@@ -1,0 +1,55 @@
+PHASE 38 — Homepage order and FlixQuest genre layouts
+Date: 2026-10-31
+
+SOURCE AUDIT
+PASS: Inspected FlixQuest home_screen.dart homeRows assembly and ordering.
+PASS: Inspected FlixQuest home_feed_controller.dart list sources, service shelves, random category selection, and CategoryLayout mapping.
+PASS: Inspected FlixQuest category_section.dart Feature/stillsAndPosters/twoPosterRows/stills/posters render behavior.
+PASS: Inspected FlixQuest media_rows.dart PosterRow, TopTenRow, ContinueRow, and StillRow.
+PASS: Inspected FlixQuest section_header.dart kicker + See all header.
+PASS: Inspected FlixQuest hero_card.dart and home_hero.dart rotating hero / 7-second interval / interaction pause.
+
+HOMEPAGE ORDER
+PASS: HeroCarousel is composed before the Home content sequence.
+PASS: Home feed order is Continue Watching, Top 10 Movies, Top 10 Series, Top 10 Anime, Library, Trending Movies, Trending Series, Trending Anime, New Movies, New Episodes, Popular Movies, Popular Series, Popular Anime, Streaming Services, provider shelves, Top Rated Movies, Top Rated Series, Top Rated Anime, Upcoming Movies, then the four fixed genre shelves.
+PASS: Provider shelf order under All is Netflix Series (8), Disney+ Movies (337), Prime Video Movies (9).
+PASS: No other Home content LazyColumn sections are included in the Home branch outside the requested list.
+
+GENRE MAPPING
+PASS: Action = TMDB movie genre 28, HomeGenreKind.MOVIE, STILLS.
+PASS: Reality = TMDB TV genre 10764, HomeGenreKind.SERIES, STILLS_AND_POSTERS.
+PASS: Mystery = TMDB TV genre 9648, HomeGenreKind.SERIES, TWO_POSTER_ROWS.
+PASS: History = TMDB movie genre 36, HomeGenreKind.MOVIE, FEATURE.
+PASS: No random genre shelf selection remains in the CineStream HomeViewModel curated feed.
+
+DATA SOURCE SEPARATION
+PASS: TMDB daily Trending default is window=day for Top 10 Movie/TV shelves.
+PASS: TMDB weekly Trending uses window=week for Trending Movie/TV shelves.
+PASS: Anime daily feed is separate and validates genre 16 + original language ja.
+PASS: Popular movies and TV use independent Popular API routes.
+PASS: Top Rated feeds use independent Top Rated methods.
+PASS: Upcoming Movie feed is a distinct feed.
+PASS: Streaming-provider queries include provider ID and watch region.
+NOTE: Trending Anime adds a bounded Popular Anime backfill only when actual daily+weekly Trending Anime yields fewer than 20; actual daily/weekly items retain priority.
+
+STATIC RESOURCE CHECKS
+Pending results are recorded by the packaging validation script run below.
+
+BUILD STATUS
+NOT VERIFIED: Gradle 8.9 is not cached in the execution environment. The project wrapper distribution URL is services.gradle.org; network access is unavailable / unresolved. No APK compilation claim is made.
+
+AUTOMATED STATIC RESULTS (2026-10-31)
+PASS: Parsed 13 Android resource XML files; zero parse errors.
+PASS: Checked 55 R.string references in HomeScreen.kt, HomeViewModel.kt, FlixQuestHomeComponents.kt, and HeroCarousel.kt; zero missing references in values and values-ar.
+PASS: English and Arabic strings.xml have zero duplicate string names.
+PASS: Verified relative order of the banner and every requested Home section key from Continue Watching through the four genre shelves.
+PASS: Provider order under All = [Netflix 8, Disney+ 337, Prime Video 9].
+PASS: Verified exact genre IDs, content kinds, layout names, and genre shelf order [Action, Reality, Mystery, History].
+PASS: Verified Compose layout branches implement the required feature / stills+posters / two poster rows / stills semantics.
+PASS: Verified API / repository source separation for daily Trending, weekly Trending, Popular, Top Rated, Upcoming, and strict anime filters.
+PASS: No random category selector / categoryCount remains in CineStream Kotlin Home sources.
+PASS: No unrequested Home sections appear in the Home LazyColumn branch.
+PASS: Banner auto-advance is seven seconds in Home and pauses during Home scrolling / hero scrolling.
+
+BUILD STATUS
+NOT VERIFIED: `assembleDebug` was not run to completion. Gradle 8.9 is absent from local wrapper cache; wrapper distribution is hosted at services.gradle.org. This environment has no successful wrapper distribution resolution. No APK build or on-device test is claimed.

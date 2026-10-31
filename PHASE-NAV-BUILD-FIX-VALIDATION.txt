@@ -1,0 +1,11 @@
+CINESTREAM-PRO navigation build fix validation
+Date: 2026-10-30
+
+[PASS] Original failing source located at app/src/main/java/com/example/ui/components/BottomNavBar.kt
+[PASS] Import androidx.compose.animation.togetherWith exists in patched source
+[PASS] togetherWith is used by AnimatedContent transitionSpec
+[PASS] Existing transition code is retained
+[PASS] Compose BOM version checked: 2024.10.01
+[PASS] Repair report added
+[NOTE] Local Gradle 8.9 build not run: Gradle executable/distribution not available in this environment
+[NOTE] GitHub Actions build and APK output remain unverified; rerun workflow on patched source

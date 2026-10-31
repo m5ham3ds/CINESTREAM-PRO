@@ -1,0 +1,32 @@
+CINESTREAM PRO — PHASE 39 FINAL REDELIVERY VALIDATION
+Date: 2026-10-31
+Baseline: CINESTREAM-PRO-PHASE38-HOMEPAGE-ORDER-GENRE-DESIGNS.zip
+Patch: PHASE39 source changes applied with git apply to clean baseline
+Scope: Search genre tile sizing, Discover Streaming On cards, New & Hot Coming Soon.
+
+[PASS] Patch applied cleanly to the Phase 38 baseline.
+[PASS] All 13 Android resource XML files parsed; errors=0.
+[PASS] values/strings.xml resource names unique.
+[PASS] values-ar/strings.xml resource names unique.
+[PASS] English and Arabic premiere date labels exist and have %1$s placeholders.
+[PASS] Search genre cards use 52dp height, 10dp gap, 14dp inset, 15sp text.
+[PASS] Search genre grid uses 2 columns on phones and 4 on tablet widths.
+[PASS] Search keeps Movie, Series and Anime genre sections and existing navigation IDs.
+[PASS] Discover providers match FlixQuest order and TMDB IDs exactly (11 providers).
+[PASS] Discover tiles use 3 columns on phones and 5 on tablet widths.
+[PASS] Discover tile height is 0.58 x tile width.
+[PASS] Discover uses the light logo plate and ContentScale.Fit.
+[PASS] Provider filtering still reads and updates actual provider IDs.
+[PASS] Coming Soon has a 68dp date rail beside the feature card.
+[PASS] Coming Soon art uses 16:9; logo lookup and text fallback are implemented.
+[PASS] Coming Soon date label, metadata, overview and My List action are present.
+[PASS] Coming Soon card does not add a Play action.
+[PASS] Upcoming Anime remains a separate content type and uses Anime genre labels.
+[PASS] New & Hot keeps the separate Top 10 Anime tab.
+[PASS] Static source-contract validation: 20/20 checks passed.
+[PASS] Kotlin parser-only scan: 0 syntax/parser diagnostics (without Android/Compose classpath).
+
+[BLOCKED] Full Gradle assembleDebug / APK compilation.
+Reason: Gradle Wrapper could not download Gradle 8.9 because services.gradle.org was unreachable (UnknownHostException).
+
+IMPORTANT: This log does not claim a successful Android build or device runtime test.

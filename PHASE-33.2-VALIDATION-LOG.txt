@@ -1,0 +1,23 @@
+CINESTREAM PRO — PHASE 33.2 VALIDATION LOG
+==========================================
+Input: PHASE33.1-UNICODE-RESOURCE-FIX.zip
+
+Applied fixes:
+[PASS] DiscoverScreen: progression converted to stable List<Int> for LazyRow.items.
+[PASS] NewAndHotScreen: stringResource labels moved outside LazyListScope lambda.
+[PASS] SearchScreen: invalid stickyHeader import removed; LazyListScope DSL call retained.
+
+Static checks:
+[PASS] XML well-formedness: 13 files parsed.
+[PASS] Discover year list
+[PASS] New & Hot sections outside LazyRow
+[PASS] Search stickyHeader retained inside LazyColumn
+[PASS] Search invalid import removed
+[PASS] Previous Unicode fix retained
+[BLOCKED] Gradle compileDebugKotlin could not be started locally: wrapper download failed with UnknownHostException: services.gradle.org (Gradle 8.9 distribution unavailable in this environment).
+
+Warnings unrelated to this compile failure:
+- Android Gradle Plugin 8.7.2 was tested through compileSdk 35 while project uses compileSdk 36.
+- Native libraries could not be stripped and are packaged as-is; these were warnings in the supplied log.
+
+Conclusion: reported source-level issues have been corrected and static checks passed. Full assembleDebug remains UNVERIFIED until CI runs successfully.
